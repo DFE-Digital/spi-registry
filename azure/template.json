@@ -32,6 +32,9 @@
       "minLength": 2,
       "maxLength": 2,
       "defaultValue": "01"
+    },
+    "giasStorageConnectionString": {
+      "type": "securestring"
     }
   },
   "variables": {
@@ -41,10 +44,7 @@
     "servicePlanName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-asp-01')]",
     "functionAppName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-fa-01')]",
     "appInsightsName": "[concat(variables('namePrefix'), '-ai-', parameters('appInsightsInstance'))]",
-    "sharedResourceGroupName": "[concat(variables('namePrefix'), '-shared')]",
-    "giasResourceGroupName": "[concat(variables('namePrefix'), '-giasadpt')]",
-    "giasStorageAccountName": "[concat(variables('namePrefix'), 'giasadpt')]",
-    "giasStorageAccountId": "[concat(variables('giasResourceGroupName'),'/providers/','Microsoft.Storage/storageAccounts/', variables('giasStorageAccountName'))]"
+    "sharedResourceGroupName": "[concat(variables('namePrefix'), '-shared')]"
   },
   "resources": [
     {
@@ -143,7 +143,7 @@
             },
             {
               "name": "SPI_GiasAdapter__CacheConnectionString",
-              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('giasStorageAccountName'), ';AccountKey=', listKeys(variables('giasStorageAccountId'),'2015-05-01-preview').key1)]"
+              "value": "[parameters('giasStorageConnectionString')]"
             }
           ]
         }
