@@ -44,7 +44,7 @@
     "sharedResourceGroupName": "[concat(variables('namePrefix'), '-shared')]",
     "giasResourceGroupName": "[concat(variables('namePrefix'), '-giasadpt')]",
     "giasStorageAccountName": "[concat(variables('namePrefix'), 'giasadpt')]",
-    "giasStorageAccountId": "[concat(resourceId(variables('giasResourceGroupName'),'/providers/','Microsoft.Storage/storageAccounts/', variables('giasStorageAccountName'))]"
+    "giasStorageAccountId": "[concat(resourceId(variables('giasResourceGroupName')),'/providers/','Microsoft.Storage/storageAccounts/', variables('giasStorageAccountName'))]"
   },
   "resources": [
     {
