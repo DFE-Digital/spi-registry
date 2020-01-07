@@ -4,6 +4,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Functions"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Domain", "Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj", "{B9C149E8-027A-4855-953A-CD5F2D7B21A6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Deploy", "Deploy", "{B2E320E0-3554-4B75-B661-72BC04A7B05C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{043D77D1-345F-450B-AD95-678D5D3B14CA}"
+ProjectSection(SolutionItems) = preProject
+	..\pipelines\build.yml = ..\pipelines\build.yml
+EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Release", "Release", "{288CA3ED-001C-4F22-8765-6659EB41F8E3}"
+ProjectSection(SolutionItems) = preProject
+	..\azure\template.json = ..\azure\template.json
+EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +30,9 @@ Global
 		{B9C149E8-027A-4855-953A-CD5F2D7B21A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B9C149E8-027A-4855-953A-CD5F2D7B21A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B9C149E8-027A-4855-953A-CD5F2D7B21A6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{043D77D1-345F-450B-AD95-678D5D3B14CA} = {B2E320E0-3554-4B75-B661-72BC04A7B05C}
+		{288CA3ED-001C-4F22-8765-6659EB41F8E3} = {B2E320E0-3554-4B75-B661-72BC04A7B05C}
 	EndGlobalSection
 EndGlobal
