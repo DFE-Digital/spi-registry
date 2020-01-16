@@ -72,7 +72,7 @@ namespace Dfe.Spi.Registry.Functions
                 {
                     new EntityPointer
                     {
-                        SourceSystem = "UKRLP",
+                        SourceSystemName = "UKRLP",
                         SourceSystemId = entity.Ukprn.ToString(),
                     },
                 };
@@ -118,7 +118,7 @@ namespace Dfe.Spi.Registry.Functions
 
     public class EntityPointer
     {
-        public string SourceSystem { get; set; }
+        public string SourceSystemName { get; set; }
         public string SourceSystemId { get; set; }
     }
 }
