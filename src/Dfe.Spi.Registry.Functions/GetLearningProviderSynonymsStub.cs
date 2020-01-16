@@ -43,6 +43,7 @@ namespace Dfe.Spi.Registry.Functions
 
             if (!system.Equals("GIAS"))
             {
+                _logger.Debug($"Only support GIAS as system, but received {system}");
                 return new NotFoundResult();
             }
 
@@ -60,6 +61,7 @@ namespace Dfe.Spi.Registry.Functions
             var entity = await GetEstablishmentAsync(urn, cancellationToken);
             if (entity == null)
             {
+                _logger.Debug($"Could not find an establishment with urn {urn}");
                 return new NotFoundResult();
             }
 
