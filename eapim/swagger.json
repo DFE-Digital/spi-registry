@@ -1,0 +1,81 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Registry API",
+    "version": "2.0",
+    "description": "SPI middleware component: provides data registry services to the GraphQL API."
+  },
+  "host": "__function_app_host__",
+  "paths": {
+    "/learning-providers/{system}/{id}/synonyms": {
+      "get": {
+        "description": "Gets learning provider synonyms.",
+        "operationId": "get-learning-provider-synonyms",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "system",
+            "type": "string",
+            "description": "The name of the system.",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "type": "string",
+            "description": "The id of the learning provider.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "description": "Bearer token authentication.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-Internal-Request-Id",
+            "type": "string",
+            "description": "An internal request id. Should be a vaild guid.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-External-Request-Id",
+            "description": "An optional external request id. Used in logging.",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Synonyms were found, results are included in the body.",
+            "schema": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "/HeartBeat": {
+      "get": {
+        "description": "Standard diagnostics method, used to test the health of the facade's underlying system.",
+        "operationId": "heart-beat",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "description": "Bearer token authentication.",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The standard/only response from the method."
+          }
+        }
+      }
+    }
+  }
+}
