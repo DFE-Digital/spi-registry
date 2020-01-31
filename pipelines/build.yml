@@ -54,6 +54,13 @@ steps:
       TargetFolder: '$(build.artifactstagingdirectory)/publish'
       OverWrite: true
 
+  - task: CopyFiles@2
+    displayName: 'Copy EAPIM files'
+    inputs:
+      Contents: |
+        eapim/*
+      TargetFolder: '$(build.artifactstagingdirectory)/publish'
+
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact'
     inputs:
