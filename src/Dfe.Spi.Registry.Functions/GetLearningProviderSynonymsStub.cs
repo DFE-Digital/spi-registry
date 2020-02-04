@@ -5,7 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.Models;
+using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Domain.Configuration;
+using Dfe.Spi.Registry.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -21,11 +23,16 @@ namespace Dfe.Spi.Registry.Functions
     {
         private const string FunctionName = nameof(GetLearningProviderSynonymsStub);
 
+        private readonly IEntityManager _entityManager;
         private readonly RegistryConfiguration _configuration;
         private readonly ILoggerWrapper _logger;
 
-        public GetLearningProviderSynonymsStub(RegistryConfiguration configuration, ILoggerWrapper logger)
+        public GetLearningProviderSynonymsStub(
+            IEntityManager entityManager,
+            RegistryConfiguration configuration, 
+            ILoggerWrapper logger)
         {
+            _entityManager = entityManager;
             _configuration = configuration;
             _logger = logger;
         }
@@ -41,43 +48,51 @@ namespace Dfe.Spi.Registry.Functions
             _logger.SetContext(req.Headers);
             _logger.Info($"{FunctionName} triggered at {DateTime.Now} with system {system} and id {id}");
 
-            if (!system.Equals("GIAS"))
+            var pointers =
+                await _entityManager.GetSynonymousEntitiesAsync("learning-provider", system, id, cancellationToken);
+            
+            return new OkObjectResult(new StubSynonymResult
             {
-                _logger.Debug($"Only support GIAS as system, but received {system}");
-                return new NotFoundResult();
-            }
+                Synonyms = pointers,
+            });
 
-            long urn;
-            if (!long.TryParse(id, out urn))
-            {
-                return new BadRequestObjectResult(new HttpErrorBody
-                {
-                    ErrorIdentifier = "REG-URN-NOTNUMERIC",
-                    Message = "id must be a urn (numeric)",
-                    StatusCode = HttpStatusCode.BadRequest,
-                });
-            }
-
-            var entity = await GetEstablishmentAsync(urn, cancellationToken);
-            if (entity == null)
-            {
-                _logger.Debug($"Could not find an establishment with urn {urn}");
-                return new NotFoundResult();
-            }
-
-            var result = new StubSynonymResult();
-            if (entity.Ukprn.HasValue && entity.Ukprn > 0)
-            {
-                result.Synonyms = new[]
-                {
-                    new EntityPointer
-                    {
-                        SourceSystemName = "UKRLP",
-                        SourceSystemId = entity.Ukprn.ToString(),
-                    },
-                };
-            }
-            return new OkObjectResult(result);
+            // if (!system.Equals("GIAS"))
+            // {
+            //     _logger.Debug($"Only support GIAS as system, but received {system}");
+            //     return new NotFoundResult();
+            // }
+            //
+            // long urn;
+            // if (!long.TryParse(id, out urn))
+            // {
+            //     return new BadRequestObjectResult(new HttpErrorBody
+            //     {
+            //         ErrorIdentifier = "REG-URN-NOTNUMERIC",
+            //         Message = "id must be a urn (numeric)",
+            //         StatusCode = HttpStatusCode.BadRequest,
+            //     });
+            // }
+            //
+            // var entity = await GetEstablishmentAsync(urn, cancellationToken);
+            // if (entity == null)
+            // {
+            //     _logger.Debug($"Could not find an establishment with urn {urn}");
+            //     return new NotFoundResult();
+            // }
+            //
+            // var result = new StubSynonymResult();
+            // if (entity.Ukprn.HasValue && entity.Ukprn > 0)
+            // {
+            //     result.Synonyms = new[]
+            //     {
+            //         new EntityPointer
+            //         {
+            //             SourceSystemName = "UKRLP",
+            //             SourceSystemId = entity.Ukprn.ToString(),
+            //         },
+            //     };
+            // }
+            // return new OkObjectResult(result);
         }
 
 
@@ -110,15 +125,20 @@ namespace Dfe.Spi.Registry.Functions
             public long? Ukprn { get; set; }
         }
     }
-
+    
     public class StubSynonymResult
     {
         public EntityPointer[] Synonyms { get; set; } = new EntityPointer[0];
     }
 
-    public class EntityPointer
-    {
-        public string SourceSystemName { get; set; }
-        public string SourceSystemId { get; set; }
-    }
+    // public class StubSynonymResult
+    // {
+    //     public EntityPointer[] Synonyms { get; set; } = new EntityPointer[0];
+    // }
+    //
+    // public class EntityPointer
+    // {
+    //     public string SourceSystemName { get; set; }
+    //     public string SourceSystemId { get; set; }
+    // }
 }

@@ -4,7 +4,7 @@
         <AzureFunctionsVersion>v2</AzureFunctionsVersion>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.0.5" />
+        <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.0.7" />
         <PackageReference Include="Dfe.Spi.Common.Models" Version="1.0.2" />
         <PackageReference Include="Microsoft.Azure.Cosmos.Table" Version="1.0.6" />
         <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.0.0" />
@@ -22,6 +22,7 @@
         </None>
     </ItemGroup>
     <ItemGroup>
+      <ProjectReference Include="..\Dfe.Spi.Registry.Application\Dfe.Spi.Registry.Application.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj" />
     </ItemGroup>
 </Project>
