@@ -13,6 +13,7 @@ using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
 using Dfe.Spi.Registry.Functions;
+using Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
@@ -41,11 +42,8 @@ namespace Dfe.Spi.Registry.Functions
             AddConfiguration(services, rawConfiguration);
             AddLogging(services);
             AddHttp(services);
-
-            services
-                .AddSingleton<IEntityRepository, StubEntityRepository>()
-                .AddSingleton<ILinkRepository, StubLinkRepository>()
-                .AddScoped<IEntityManager, EntityManager>();
+            AddManagers(services);
+            AddRepositories(services);
         }
 
         private IConfigurationRoot BuildConfiguration()
@@ -65,6 +63,8 @@ namespace Dfe.Spi.Registry.Functions
             _configuration = new RegistryConfiguration();
             _rawConfiguration.Bind(_configuration);
             services.AddSingleton(_configuration);
+            services.AddSingleton(_configuration.Entities);
+            services.AddSingleton(_configuration.Links);
         }
 
         private void AddLogging(IServiceCollection services)
@@ -84,49 +84,17 @@ namespace Dfe.Spi.Registry.Functions
         {
             services.AddScoped<IRestClient, RestClient>();
         }
-    }
 
-    public class StubEntityRepository : IEntityRepository
-    {
-        private static readonly Entity[] Entities = new[]
+        private void AddManagers(IServiceCollection services)
         {
-            new Entity
-            {
-                Type = "learning-provider",
-                SourceSystemName = "GIAS",
-                SourceSystemId = "123456",
-                Links = new[]
-                {
-                    new LinkPointer
-                    {
-                        LinkType = "Synonym",
-                        LinkId = "syn-1",
-                    },
-                }
-            },
-            new Entity
-            {
-                Type = "learning-provider",
-                SourceSystemName = "UKRLP",
-                SourceSystemId = "987654",
-                Links = new[]
-                {
-                    new LinkPointer
-                    {
-                        LinkType = "Synonym",
-                        LinkId = "syn-1",
-                    },
-                }
-            },
-        };
-        
-        public Task<Entity> GetEntityAsync(string type, string sourceSystemName, string sourceSystemId, CancellationToken cancellationToken)
+            services.AddScoped<IEntityManager, EntityManager>();
+        }
+
+        private void AddRepositories(IServiceCollection services)
         {
-            var entity = Entities.SingleOrDefault(e =>
-                e.Type.Equals(type, StringComparison.InvariantCultureIgnoreCase) &&
-                e.SourceSystemName.Equals(sourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
-                e.SourceSystemId.Equals(sourceSystemId, StringComparison.InvariantCultureIgnoreCase));
-            return Task.FromResult(entity);
+            services
+                .AddSingleton<IEntityRepository, TableEntityRepository>()
+                .AddSingleton<ILinkRepository, StubLinkRepository>();
         }
     }
 
