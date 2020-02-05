@@ -14,14 +14,29 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
             : base(configuration.TableStorageConnectionString, configuration.TableStorageTableName)
         {
         }
-        
-        public async Task<Entity> GetEntityAsync(string type, string sourceSystemName, string sourceSystemId, CancellationToken cancellationToken)
+
+        public async Task<Entity> GetEntityAsync(string type, string sourceSystemName, string sourceSystemId,
+            CancellationToken cancellationToken)
         {
             var keys = GetKeyPair(type, sourceSystemName, sourceSystemId);
             var entity = await GetSingleEntityAsync(keys.PartitionKey, keys.RowKey, cancellationToken);
             return entity;
         }
 
+        
+        
+        public async Task StoreAsync(Entity entity, CancellationToken cancellationToken)
+        {
+            await InsertOrReplaceAsync(entity, cancellationToken);
+        }
+
+        private TableEntityKeyPair GetKeyPair(Entity model)
+        {
+            return GetKeyPair(model.Type, model.SourceSystemName, model.SourceSystemId);
+        }
+
+        
+        
         private TableEntityKeyPair GetKeyPair(string type, string sourceSystemName, string sourceSystemId)
         {
             return new TableEntityKeyPair
@@ -30,6 +45,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
                 RowKey = $"{sourceSystemName.ToUpper()}:{sourceSystemId.ToLower()}",
             };
         }
+
         protected override Entity ConvertEntityToModel(EntityEntity entity)
         {
             return new Entity
@@ -37,8 +53,27 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
                 SourceSystemName = entity.SourceSystemName,
                 SourceSystemId = entity.SourceSystemId,
                 Type = entity.Type,
-                Data = !string.IsNullOrEmpty(entity.Data) ? JsonConvert.DeserializeObject<Dictionary<string,string>>(entity.Data) : null,
-                Links = !string.IsNullOrEmpty(entity.Links) ? JsonConvert.DeserializeObject<LinkPointer[]>(entity.Links) : null,
+                Data = !string.IsNullOrEmpty(entity.Data)
+                    ? JsonConvert.DeserializeObject<Dictionary<string, string>>(entity.Data)
+                    : null,
+                Links = !string.IsNullOrEmpty(entity.Links)
+                    ? JsonConvert.DeserializeObject<LinkPointer[]>(entity.Links)
+                    : null,
+            };
+        }
+
+        protected override EntityEntity ConvertModelToEntity(Entity model)
+        {
+            var keys = GetKeyPair(model);
+            return new EntityEntity
+            {
+                PartitionKey = keys.PartitionKey,
+                RowKey = keys.RowKey,
+                SourceSystemName = model.SourceSystemName,
+                SourceSystemId = model.SourceSystemId,
+                Type = model.Type,
+                Data = model.Data != null ? JsonConvert.SerializeObject(model.Data) : null,
+                Links = model.Links != null ? JsonConvert.SerializeObject(model.Links) : null,
             };
         }
     }

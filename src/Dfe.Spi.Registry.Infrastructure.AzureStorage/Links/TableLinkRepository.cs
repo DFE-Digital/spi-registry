@@ -15,6 +15,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Links
         {
         }
         
+        
         public async Task<Link> GetLinkAsync(string type, string id, CancellationToken cancellationToken)
         {
             var keys = GetKeyPair(type, id);
@@ -34,6 +35,30 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Links
             };
         }
 
+        public async Task StoreAsync(Link link, CancellationToken cancellationToken)
+        {
+            var toStore = link.LinkedEntities.Select(le =>
+                new Link
+                {
+                    Type = link.Type,
+                    Id = link.Id,
+                    LinkedEntities = new[] {le},
+                }).ToArray();
+
+            await InsertOrReplaceBatchAsync(toStore, cancellationToken);
+        }
+
+        
+        
+        private TableEntityKeyPair GetKeyPair(Link model, int entityIndex = 0)
+        {
+            var entity = model.LinkedEntities[entityIndex];
+            return new TableEntityKeyPair
+            {
+                PartitionKey = $"{model.Type.ToLower()}:{model.Id.ToLower()}",
+                RowKey = $"{entity.EntityType.ToLower()}:{entity.EntitySourceSystemName.ToUpper()}:{entity.EntitySourceSystemId.ToLower()}",
+            };
+        }
         private TableEntityKeyPair GetKeyPair(string type, string id)
         {
             return new TableEntityKeyPair
@@ -59,6 +84,30 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Links
                         CreatedReason = entity.CreatedReason,
                     },
                 }
+            };
+        }
+
+        protected override EntityLinkEntity ConvertModelToEntity(Link model)
+        {
+            return ConvertModelToEntity(model, 0);
+        }
+        private EntityLinkEntity ConvertModelToEntity(Link model, int entityIndex)
+        {
+            var keys = GetKeyPair(model);
+            var entity = model.LinkedEntities[entityIndex];
+
+            return new EntityLinkEntity
+            {
+                PartitionKey = keys.PartitionKey,
+                RowKey = keys.RowKey,
+                LinkType = model.Type,
+                LinkId = model.Id,
+                EntityType = entity.EntityType,
+                EntitySourceSystemName = entity.EntitySourceSystemName,
+                EntitySourceSystemId = entity.EntitySourceSystemId,
+                CreatedBy = entity.CreatedBy,
+                CreatedAt = entity.CreatedAt,
+                CreatedReason = entity.CreatedReason,
             };
         }
     }

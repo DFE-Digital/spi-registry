@@ -44,6 +44,28 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
             return models;
         }
 
+        protected async Task InsertOrReplaceAsync(TModel model, CancellationToken cancellationToken)
+        {
+            var entity = ConvertModelToEntity(model);
+
+            var operation = TableOperation.InsertOrReplace(entity);
+            await Table.ExecuteAsync(operation, cancellationToken);
+        }
+
+        protected async Task InsertOrReplaceBatchAsync(TModel[] models, CancellationToken cancellationToken)
+        {
+            var batch = new TableBatchOperation();
+
+            foreach (var model in models)
+            {
+                var entity = ConvertModelToEntity(model);
+                batch.InsertOrReplace(entity);
+            }
+            
+            await Table.ExecuteBatchAsync(batch, cancellationToken);
+        }
+
         protected abstract TModel ConvertEntityToModel(TEntity entity);
+        protected abstract TEntity ConvertModelToEntity(TModel model);
     }
 }
