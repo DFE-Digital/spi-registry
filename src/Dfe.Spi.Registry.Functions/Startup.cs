@@ -1,8 +1,4 @@
-using System;
 using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dfe.Spi.Common.Context.Definitions;
 using Dfe.Spi.Common.Http.Server;
 using Dfe.Spi.Common.Http.Server.Definitions;
@@ -14,6 +10,7 @@ using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
 using Dfe.Spi.Registry.Functions;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities;
+using Dfe.Spi.Registry.Infrastructure.AzureStorage.Links;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
@@ -94,42 +91,7 @@ namespace Dfe.Spi.Registry.Functions
         {
             services
                 .AddSingleton<IEntityRepository, TableEntityRepository>()
-                .AddSingleton<ILinkRepository, StubLinkRepository>();
-        }
-    }
-
-    public class StubLinkRepository : ILinkRepository
-    {
-        private static readonly Link[] Links = new[]
-        {
-            new Link
-            {
-                Type = "Synonym",
-                Id = "syn-1",
-                LinkedEntities = new []
-                {
-                    new EntityLink
-                    {
-                        EntityType = "learning-provider",
-                        EntitySourceSystemName = "GIAS",
-                        EntitySourceSystemId = "123456"
-                    }, 
-                    new EntityLink
-                    {
-                        EntityType = "learning-provider",
-                        EntitySourceSystemName = "UKRLP",
-                        EntitySourceSystemId = "987654"
-                    }, 
-                }
-            },
-        };
-        
-        public Task<Link> GetLinkAsync(string type, string id, CancellationToken cancellationToken)
-        {
-            var link = Links.SingleOrDefault(l =>
-                l.Type.Equals(type, StringComparison.InvariantCultureIgnoreCase) &&
-                l.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase));
-            return Task.FromResult(link);
+                .AddSingleton<ILinkRepository, TableLinkRepository>();
         }
     }
 }

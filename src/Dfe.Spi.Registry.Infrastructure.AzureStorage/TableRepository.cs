@@ -1,11 +1,13 @@
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.Table;
+using Microsoft.OData.UriParser;
 
 namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
 {
     public abstract class TableRepository<TEntity, TModel> 
-        where TEntity : TableEntity
+        where TEntity : TableEntity, new()
         where TModel : class
     {
         protected TableRepository(string connectionString, string tableName)
@@ -30,6 +32,16 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
             }
 
             return ConvertEntityToModel((TEntity) operationResult.Result);
+        }
+        protected async Task<TModel[]> GetEntitiesInPartition(string partitionKey, CancellationToken cancellationToken)
+        {
+            await Table.CreateIfNotExistsAsync(cancellationToken);
+
+            var query = new TableQuery<TEntity>().Where(
+                TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, partitionKey));
+            var queryResult = Table.ExecuteQuery(query);
+            var models = queryResult.Select(ConvertEntityToModel).ToArray();
+            return models;
         }
 
         protected abstract TModel ConvertEntityToModel(TEntity entity);
