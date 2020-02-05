@@ -2,11 +2,19 @@ namespace Dfe.Spi.Registry.Domain.Configuration
 {
     public class RegistryConfiguration
     {
-        public GiasAdapterConfiguration GiasAdapter { get; set; }
+        public EntitiesConfiguration Entities { get; set; }
+        public LinksConfiguration Links { get; set; }
     }
 
-    public class GiasAdapterConfiguration
+    public class EntitiesConfiguration
     {
-        public string CacheConnectionString { get; set; }
+        public string TableStorageConnectionString { get; set; }
+        public string TableStorageTableName { get; set; }
+    }
+
+    public class LinksConfiguration
+    {
+        public string TableStorageConnectionString { get; set; }
+        public string TableStorageTableName { get; set; }
     }
 }

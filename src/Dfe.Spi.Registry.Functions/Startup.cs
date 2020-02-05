@@ -1,8 +1,16 @@
 using System.IO;
+using Dfe.Spi.Common.Context.Definitions;
+using Dfe.Spi.Common.Http.Server;
+using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging;
 using Dfe.Spi.Common.Logging.Definitions;
+using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Domain.Configuration;
+using Dfe.Spi.Registry.Domain.Entities;
+using Dfe.Spi.Registry.Domain.Links;
 using Dfe.Spi.Registry.Functions;
+using Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities;
+using Dfe.Spi.Registry.Infrastructure.AzureStorage.Links;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +39,8 @@ namespace Dfe.Spi.Registry.Functions
             AddConfiguration(services, rawConfiguration);
             AddLogging(services);
             AddHttp(services);
+            AddManagers(services);
+            AddRepositories(services);
         }
 
         private IConfigurationRoot BuildConfiguration()
@@ -50,6 +60,8 @@ namespace Dfe.Spi.Registry.Functions
             _configuration = new RegistryConfiguration();
             _rawConfiguration.Bind(_configuration);
             services.AddSingleton(_configuration);
+            services.AddSingleton(_configuration.Entities);
+            services.AddSingleton(_configuration.Links);
         }
 
         private void AddLogging(IServiceCollection services)
@@ -58,12 +70,28 @@ namespace Dfe.Spi.Registry.Functions
             services.AddScoped(typeof(ILogger<>), typeof(Logger<>));
             services.AddScoped<ILogger>(provider =>
                 provider.GetService<ILoggerFactory>().CreateLogger(LogCategories.CreateFunctionUserCategory("Common")));
+            
+            services.AddScoped<IHttpSpiExecutionContextManager, HttpSpiExecutionContextManager>();
+            services.AddScoped<ISpiExecutionContextManager>((provider) =>
+                (ISpiExecutionContextManager) provider.GetService(typeof(IHttpSpiExecutionContextManager)));
             services.AddScoped<ILoggerWrapper, LoggerWrapper>();
         }
 
         private void AddHttp(IServiceCollection services)
         {
             services.AddScoped<IRestClient, RestClient>();
+        }
+
+        private void AddManagers(IServiceCollection services)
+        {
+            services.AddScoped<IEntityManager, EntityManager>();
+        }
+
+        private void AddRepositories(IServiceCollection services)
+        {
+            services
+                .AddSingleton<IEntityRepository, TableEntityRepository>()
+                .AddSingleton<ILinkRepository, TableLinkRepository>();
         }
     }
 }

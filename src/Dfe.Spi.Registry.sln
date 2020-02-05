@@ -16,6 +16,20 @@ ProjectSection(SolutionItems) = preProject
 	..\azure\template.json = ..\azure\template.json
 EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Application", "Dfe.Spi.Registry.Application\Dfe.Spi.Registry.Application.csproj", "{60641876-C2DF-4A81-99B1-65E590C5E15E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{1BAA8676-B72B-4E3B-8CAA-6EE704E95A27}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Application.UnitTests", "Dfe.Spi.Registry.Application.UnitTests\Dfe.Spi.Registry.Application.UnitTests.csproj", "{E6000FD0-AB1B-4672-9640-88FAEDF87FFA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Functions.UnitTests", "Dfe.Spi.Registry.Functions.UnitTests\Dfe.Spi.Registry.Functions.UnitTests.csproj", "{EF305EA4-CAC5-4F6B-8D74-2AD9522C2416}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Infrastructure.AzureStorage", "Dfe.Spi.Registry.Infrastructure.AzureStorage\Dfe.Spi.Registry.Infrastructure.AzureStorage.csproj", "{210DFB5A-2F5E-440F-A4EA-8528E017FEB8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{84B4B7F7-C7BE-4D07-BE6D-2A38164BAD34}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateRegistryFromGiasEstablishments", "PopulateRegistryFromGiasEstablishments\PopulateRegistryFromGiasEstablishments.csproj", "{D5D95E98-A88E-42C1-993A-61DBB7E86873}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,9 +44,32 @@ Global
 		{B9C149E8-027A-4855-953A-CD5F2D7B21A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B9C149E8-027A-4855-953A-CD5F2D7B21A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B9C149E8-027A-4855-953A-CD5F2D7B21A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60641876-C2DF-4A81-99B1-65E590C5E15E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60641876-C2DF-4A81-99B1-65E590C5E15E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60641876-C2DF-4A81-99B1-65E590C5E15E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60641876-C2DF-4A81-99B1-65E590C5E15E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6000FD0-AB1B-4672-9640-88FAEDF87FFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6000FD0-AB1B-4672-9640-88FAEDF87FFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6000FD0-AB1B-4672-9640-88FAEDF87FFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6000FD0-AB1B-4672-9640-88FAEDF87FFA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF305EA4-CAC5-4F6B-8D74-2AD9522C2416}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF305EA4-CAC5-4F6B-8D74-2AD9522C2416}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF305EA4-CAC5-4F6B-8D74-2AD9522C2416}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF305EA4-CAC5-4F6B-8D74-2AD9522C2416}.Release|Any CPU.Build.0 = Release|Any CPU
+		{210DFB5A-2F5E-440F-A4EA-8528E017FEB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{210DFB5A-2F5E-440F-A4EA-8528E017FEB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{210DFB5A-2F5E-440F-A4EA-8528E017FEB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{210DFB5A-2F5E-440F-A4EA-8528E017FEB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5D95E98-A88E-42C1-993A-61DBB7E86873}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5D95E98-A88E-42C1-993A-61DBB7E86873}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5D95E98-A88E-42C1-993A-61DBB7E86873}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5D95E98-A88E-42C1-993A-61DBB7E86873}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{043D77D1-345F-450B-AD95-678D5D3B14CA} = {B2E320E0-3554-4B75-B661-72BC04A7B05C}
 		{288CA3ED-001C-4F22-8765-6659EB41F8E3} = {B2E320E0-3554-4B75-B661-72BC04A7B05C}
+		{E6000FD0-AB1B-4672-9640-88FAEDF87FFA} = {1BAA8676-B72B-4E3B-8CAA-6EE704E95A27}
+		{EF305EA4-CAC5-4F6B-8D74-2AD9522C2416} = {1BAA8676-B72B-4E3B-8CAA-6EE704E95A27}
+		{D5D95E98-A88E-42C1-993A-61DBB7E86873} = {84B4B7F7-C7BE-4D07-BE6D-2A38164BAD34}
 	EndGlobalSection
 EndGlobal
