@@ -32,9 +32,6 @@
       "minLength": 2,
       "maxLength": 2,
       "defaultValue": "01"
-    },
-    "giasStorageConnectionString": {
-      "type": "securestring"
     }
   },
   "variables": {
@@ -143,8 +140,20 @@
               "value": "[reference(resourceId(variables('sharedResourceGroupName'), 'microsoft.insights/components/', variables('appInsightsName')), '2015-05-01').InstrumentationKey]"
             },
             {
-              "name": "SPI_GiasAdapter__CacheConnectionString",
-              "value": "[parameters('giasStorageConnectionString')]"
+              "name": "SPI_Entities__TableStorageConnectionString",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "SPI_Entities__TableStorageTableName",
+              "value": "entities"
+            },
+            {
+              "name": "SPI_Links__TableStorageConnectionString",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "SPI_Links__TableStorageTableName",
+              "value": "links"
             }
           ]
         }
