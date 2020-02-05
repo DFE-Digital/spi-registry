@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,19 +39,26 @@ namespace Dfe.Spi.Registry.Application.Entities
             var synonymLinkPointer = sourceEntity?.Links?.SingleOrDefault(l => l.LinkType == "Synonym");
             if (synonymLinkPointer == null)
             {
-                _loggerWrapper.Info($"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} does not point to any synonyms");
+                _loggerWrapper.Info(
+                    $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} does not point to any synonyms");
                 return null;
             }
-            _loggerWrapper.Info($"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} points to synonym {synonymLinkPointer.LinkId}");
+
+            _loggerWrapper.Info(
+                $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} points to synonym {synonymLinkPointer.LinkId}");
 
             var link = await _linkRepository.GetLinkAsync(synonymLinkPointer.LinkType, synonymLinkPointer.LinkId,
                 cancellationToken);
-            var entityPointers = link.LinkedEntities.Select(le => new EntityPointer
-            {
-                SourceSystemName = le.EntitySourceSystemName,
-                SourceSystemId = le.EntitySourceSystemId,
-            }).ToArray();
-            _loggerWrapper.Info($"Found {entityPointers} entities in the synonym {synonymLinkPointer} (Looked up for {entityType}:{sourceSystemName}:{sourceSystemId})");
+            var entityPointers = link.LinkedEntities
+                .Where(le => !(le.EntitySourceSystemName == sourceSystemName && le.EntitySourceSystemId == sourceSystemId))
+                .Select(le => new EntityPointer
+                {
+                    SourceSystemName = le.EntitySourceSystemName,
+                    SourceSystemId = le.EntitySourceSystemId,
+                })
+                .ToArray();
+            _loggerWrapper.Info(
+                $"Found {entityPointers} entities in the synonym {synonymLinkPointer} (Looked up for {entityType}:{sourceSystemName}:{sourceSystemId})");
 
             return entityPointers;
         }

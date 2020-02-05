@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture.NUnit3;
@@ -141,12 +142,46 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                 var actualName = actual[i].SourceSystemName;
                 var expectedId = link.LinkedEntities[i].EntitySourceSystemId;
                 var actualId = actual[i].SourceSystemId;
-                
+
                 Assert.AreEqual(expectedName, actualName,
                     $"Expected point {i} to have EntitySourceSystemName {expectedName} but had {actualName}");
                 Assert.AreEqual(expectedId, actualId,
                     $"Expected point {i} to have SourceSystemId {expectedId} but had {actualId}");
             }
+        }
+
+        [Test, AutoData]
+        public async Task ThenItShouldExcludeLinkToRequestEntityFromResult(Entity entity, LinkPointer linkPointer,
+            Link link)
+        {
+            linkPointer.LinkType = "Synonym";
+            entity.Links = new[] {linkPointer};
+            _entityRepositoryMock
+                .Setup(r => r.GetEntityAsync(
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(entity);
+
+            link.LinkedEntities = link.LinkedEntities.Concat(new[]
+            {
+                new EntityLink
+                {
+                    EntitySourceSystemName = entity.SourceSystemName,
+                    EntitySourceSystemId = entity.SourceSystemId,
+                },
+            }).ToArray();
+            _linkRepositoryMock
+                .Setup(r => r.GetLinkAsync(linkPointer.LinkType, linkPointer.LinkId, _cancellationToken))
+                .ReturnsAsync(link);
+
+            var actual = await _manager.GetSynonymousEntitiesAsync(entity.Type, entity.SourceSystemName,
+                entity.SourceSystemId,
+                _cancellationToken);
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(link.LinkedEntities.Length - 1, actual.Length);
+            Assert.IsFalse(actual.Any(x =>
+                x.SourceSystemName == entity.SourceSystemName &&
+                x.SourceSystemId == entity.SourceSystemId));
         }
     }
 }
