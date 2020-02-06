@@ -9,9 +9,11 @@ using Dfe.Spi.Registry.Application.LearningProviders;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
+using Dfe.Spi.Registry.Domain.Queuing;
 using Dfe.Spi.Registry.Functions;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Links;
+using Dfe.Spi.Registry.Infrastructure.AzureStorage.Queuing;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
@@ -42,6 +44,7 @@ namespace Dfe.Spi.Registry.Functions
             AddHttp(services);
             AddManagers(services);
             AddRepositories(services);
+            AddQueues(services);
         }
 
         private IConfigurationRoot BuildConfiguration()
@@ -63,6 +66,7 @@ namespace Dfe.Spi.Registry.Functions
             services.AddSingleton(_configuration);
             services.AddSingleton(_configuration.Entities);
             services.AddSingleton(_configuration.Links);
+            services.AddSingleton(_configuration.Queue);
         }
 
         private void AddLogging(IServiceCollection services)
@@ -94,6 +98,11 @@ namespace Dfe.Spi.Registry.Functions
             services
                 .AddSingleton<IEntityRepository, TableEntityRepository>()
                 .AddSingleton<ILinkRepository, TableLinkRepository>();
+        }
+
+        private void AddQueues(IServiceCollection services)
+        {
+            services.AddScoped<IMatchingQueue, StorageMatchingQueue>();
         }
     }
 }

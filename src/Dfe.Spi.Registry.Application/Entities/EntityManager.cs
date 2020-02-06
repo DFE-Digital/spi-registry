@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
+using Dfe.Spi.Registry.Domain.Queuing;
 
 namespace Dfe.Spi.Registry.Application.Entities
 {
@@ -20,15 +21,18 @@ namespace Dfe.Spi.Registry.Application.Entities
     {
         private readonly IEntityRepository _entityRepository;
         private readonly ILinkRepository _linkRepository;
+        private readonly IMatchingQueue _matchingQueue;
         private readonly ILoggerWrapper _logger;
 
         public EntityManager(
             IEntityRepository entityRepository,
             ILinkRepository linkRepository,
+            IMatchingQueue matchingQueue,
             ILoggerWrapper logger)
         {
             _entityRepository = entityRepository;
             _linkRepository = linkRepository;
+            _matchingQueue = matchingQueue;
             _logger = logger;
         }
 
@@ -52,7 +56,8 @@ namespace Dfe.Spi.Registry.Application.Entities
             var link = await _linkRepository.GetLinkAsync(synonymLinkPointer.LinkType, synonymLinkPointer.LinkId,
                 cancellationToken);
             var entityPointers = link.LinkedEntities
-                .Where(le => !(le.EntitySourceSystemName == sourceSystemName && le.EntitySourceSystemId == sourceSystemId))
+                .Where(le =>
+                    !(le.EntitySourceSystemName == sourceSystemName && le.EntitySourceSystemId == sourceSystemId))
                 .Select(le => new EntityPointer
                 {
                     SourceSystemName = le.EntitySourceSystemName,
@@ -68,6 +73,13 @@ namespace Dfe.Spi.Registry.Application.Entities
         public async Task SyncEntityAsync(Entity entity, CancellationToken cancellationToken)
         {
             await _entityRepository.StoreAsync(entity, cancellationToken);
+
+            await _matchingQueue.EnqueueAsync(new EntityForMatching
+            {
+                Type = entity.Type,
+                SourceSystemName = entity.SourceSystemName,
+                SourceSystemId = entity.SourceSystemId,
+            }, cancellationToken);
         }
     }
 }

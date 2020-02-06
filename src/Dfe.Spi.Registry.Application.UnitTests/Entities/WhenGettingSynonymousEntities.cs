@@ -6,6 +6,7 @@ using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
+using Dfe.Spi.Registry.Domain.Queuing;
 using Moq;
 using NUnit.Framework;
 
@@ -15,6 +16,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
     {
         private Mock<IEntityRepository> _entityRepositoryMock;
         private Mock<ILinkRepository> _linkRepositoryMock;
+        private Mock<IMatchingQueue> _matchingQueueMock;
         private Mock<ILoggerWrapper> _loggerWrapperMock;
         private EntityManager _manager;
         private CancellationToken _cancellationToken;
@@ -33,12 +35,15 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                     Type = "Synonym",
                     LinkedEntities = new EntityLink[0]
                 });
+            
+            _matchingQueueMock = new Mock<IMatchingQueue>();
 
             _loggerWrapperMock = new Mock<ILoggerWrapper>();
 
             _manager = new EntityManager(
                 _entityRepositoryMock.Object,
                 _linkRepositoryMock.Object,
+                _matchingQueueMock.Object,
                 _loggerWrapperMock.Object);
 
             _cancellationToken = new CancellationToken();

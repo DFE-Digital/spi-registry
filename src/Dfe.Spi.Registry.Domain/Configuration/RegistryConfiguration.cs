@@ -4,6 +4,7 @@ namespace Dfe.Spi.Registry.Domain.Configuration
     {
         public EntitiesConfiguration Entities { get; set; }
         public LinksConfiguration Links { get; set; }
+        public QueueConfiguration Queue { get; set; }
     }
 
     public class EntitiesConfiguration
@@ -16,5 +17,10 @@ namespace Dfe.Spi.Registry.Domain.Configuration
     {
         public string TableStorageConnectionString { get; set; }
         public string TableStorageTableName { get; set; }
+    }
+
+    public class QueueConfiguration
+    {
+        public string StorageQueueConnectionString { get; set; }
     }
 }
