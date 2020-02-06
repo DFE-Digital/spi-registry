@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using Dfe.Spi.Common.WellKnownIdentifiers;
+using Dfe.Spi.Registry.Domain;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
@@ -54,14 +55,14 @@ namespace PopulateRegistryFromGiasEstablishments
 
                 var giasEntity = new Entity
                 {
-                    Type = "learning-provider",
+                    Type = TypeNames.LearningProvider,
                     SourceSystemName = SourceSystemNames.GetInformationAboutSchools,
                     SourceSystemId = establishment.Urn.ToString(),
                 };
                 var ukrlpEntity = establishment.Ukprn.HasValue
                     ? new Entity
                     {
-                        Type = "learning-provider",
+                        Type = TypeNames.LearningProvider,
                         SourceSystemName = SourceSystemNames.UkRegisterOfLearningProviders,
                         SourceSystemId = establishment.Ukprn.Value.ToString(),
                     }

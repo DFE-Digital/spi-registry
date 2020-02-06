@@ -3,13 +3,14 @@ using System.Threading.Tasks;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Application.Entities;
+using Dfe.Spi.Registry.Domain;
 using Dfe.Spi.Registry.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 
-namespace Dfe.Spi.Registry.Functions.Entities
+namespace Dfe.Spi.Registry.Functions.LearningProviders
 {
     public class GetLearningProviderSynonyms
     {
@@ -38,14 +39,14 @@ namespace Dfe.Spi.Registry.Functions.Entities
             CancellationToken cancellationToken)
         {
             _executionContextManager.SetContext(req.Headers);
-            _loggerWrapper.Info($"Starting to get synoymns for learning-provider.{system}.{id}");
+            _loggerWrapper.Info($"Starting to get synoymns for {TypeNames.LearningProvider}.{system}.{id}");
 
             var synonyms =
-                await _entityManager.GetSynonymousEntitiesAsync("learning-provider", system, id, cancellationToken);
+                await _entityManager.GetSynonymousEntitiesAsync(TypeNames.LearningProvider, system, id, cancellationToken);
             if (synonyms == null)
             {
                 _loggerWrapper.Info(
-                    $"Could not find entity/synonyms for learning-provider.{system}.{id}. Returning not found");
+                    $"Could not find entity/synonyms for {TypeNames.LearningProvider}.{system}.{id}. Returning not found");
                 return new NotFoundResult();
             }
 

@@ -4,15 +4,16 @@ using AutoFixture.NUnit3;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Application.Entities;
+using Dfe.Spi.Registry.Domain;
 using Dfe.Spi.Registry.Domain.Entities;
-using Dfe.Spi.Registry.Functions.Entities;
+using Dfe.Spi.Registry.Functions.LearningProviders;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
 
-namespace Dfe.Spi.Registry.Functions.UnitTests.Entities
+namespace Dfe.Spi.Registry.Functions.UnitTests.LearningProviders
 {
     public class WhenGettingLearningProviderSynonyms
     {
@@ -47,7 +48,7 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.Entities
             await _function.RunAsync(_request, system, id, _cancellationToken);
 
             _entityManagerMock.Verify(m => m.GetSynonymousEntitiesAsync(
-                    "learning-provider", system, id, _cancellationToken),
+                    TypeNames.LearningProvider, system, id, _cancellationToken),
                 Times.Once);
         }
 

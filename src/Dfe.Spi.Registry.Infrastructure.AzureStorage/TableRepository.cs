@@ -46,6 +46,8 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
 
         protected async Task InsertOrReplaceAsync(TModel model, CancellationToken cancellationToken)
         {
+            await Table.CreateIfNotExistsAsync(cancellationToken);
+            
             var entity = ConvertModelToEntity(model);
 
             var operation = TableOperation.InsertOrReplace(entity);
@@ -54,6 +56,8 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
 
         protected async Task InsertOrReplaceBatchAsync(TModel[] models, CancellationToken cancellationToken)
         {
+            await Table.CreateIfNotExistsAsync(cancellationToken);
+            
             var batch = new TableBatchOperation();
 
             foreach (var model in models)
