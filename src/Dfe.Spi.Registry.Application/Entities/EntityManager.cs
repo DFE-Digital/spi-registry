@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
+using Dfe.Spi.Registry.Domain.Queuing;
 
 namespace Dfe.Spi.Registry.Application.Entities
 {
@@ -12,22 +13,27 @@ namespace Dfe.Spi.Registry.Application.Entities
     {
         Task<EntityPointer[]> GetSynonymousEntitiesAsync(string entityType, string sourceSystemName,
             string sourceSystemId, CancellationToken cancellationToken);
+
+        Task SyncEntityAsync(Entity entity, CancellationToken cancellationToken);
     }
 
     public class EntityManager : IEntityManager
     {
         private readonly IEntityRepository _entityRepository;
         private readonly ILinkRepository _linkRepository;
-        private readonly ILoggerWrapper _loggerWrapper;
+        private readonly IMatchingQueue _matchingQueue;
+        private readonly ILoggerWrapper _logger;
 
         public EntityManager(
             IEntityRepository entityRepository,
             ILinkRepository linkRepository,
-            ILoggerWrapper loggerWrapper)
+            IMatchingQueue matchingQueue,
+            ILoggerWrapper logger)
         {
             _entityRepository = entityRepository;
             _linkRepository = linkRepository;
-            _loggerWrapper = loggerWrapper;
+            _matchingQueue = matchingQueue;
+            _logger = logger;
         }
 
         public async Task<EntityPointer[]> GetSynonymousEntitiesAsync(string entityType, string sourceSystemName,
@@ -39,28 +45,41 @@ namespace Dfe.Spi.Registry.Application.Entities
             var synonymLinkPointer = sourceEntity?.Links?.SingleOrDefault(l => l.LinkType == "Synonym");
             if (synonymLinkPointer == null)
             {
-                _loggerWrapper.Info(
+                _logger.Info(
                     $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} does not point to any synonyms");
                 return null;
             }
 
-            _loggerWrapper.Info(
+            _logger.Info(
                 $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} points to synonym {synonymLinkPointer.LinkId}");
 
             var link = await _linkRepository.GetLinkAsync(synonymLinkPointer.LinkType, synonymLinkPointer.LinkId,
                 cancellationToken);
             var entityPointers = link.LinkedEntities
-                .Where(le => !(le.EntitySourceSystemName == sourceSystemName && le.EntitySourceSystemId == sourceSystemId))
+                .Where(le =>
+                    !(le.EntitySourceSystemName == sourceSystemName && le.EntitySourceSystemId == sourceSystemId))
                 .Select(le => new EntityPointer
                 {
                     SourceSystemName = le.EntitySourceSystemName,
                     SourceSystemId = le.EntitySourceSystemId,
                 })
                 .ToArray();
-            _loggerWrapper.Info(
+            _logger.Info(
                 $"Found {entityPointers} entities in the synonym {synonymLinkPointer} (Looked up for {entityType}:{sourceSystemName}:{sourceSystemId})");
 
             return entityPointers;
+        }
+
+        public async Task SyncEntityAsync(Entity entity, CancellationToken cancellationToken)
+        {
+            await _entityRepository.StoreAsync(entity, cancellationToken);
+
+            await _matchingQueue.EnqueueAsync(new EntityForMatching
+            {
+                Type = entity.Type,
+                SourceSystemName = entity.SourceSystemName,
+                SourceSystemId = entity.SourceSystemId,
+            }, cancellationToken);
         }
     }
 }
