@@ -45,6 +45,12 @@ namespace Dfe.Spi.Registry.Application.LearningProviders
                     {"ukprn", learningProvider.Ukprn.HasValue ? learningProvider.Ukprn.Value.ToString() : null},
                 },
             };
+            if (learningProvider.ManagementGroup != null)
+            {
+                entity.Data.Add("managementGroupCode", learningProvider.ManagementGroup.Code);
+            }
+            
+
             _logger.Info(
                 $"Mapped learning provider with urn {learningProvider.Urn} to: {JsonConvert.SerializeObject(entity)}");
 

@@ -52,6 +52,39 @@ namespace Dfe.Spi.Registry.Application.UnitTests.LearningProviders
         }
 
         [Test, NonRecursiveAutoData]
+        public async Task ThenItShouldMapProviderManagementGroupCodeToEntityIfAvailable(string source, LearningProvider learningProvider, string managementGroupCode)
+        {
+            learningProvider.ManagementGroup = new ManagementGroup
+            {
+                Code = managementGroupCode,
+            };
+            
+            await _manager.SyncLearningProviderAsync(source, learningProvider, _cancellationToken);
+
+            _entityManagerMock.Verify(m => m.SyncEntityAsync(
+                    It.Is<Entity>(e =>
+                        e.Data != null &&
+                        e.Data["managementGroupCode"] == learningProvider.ManagementGroup.Code),
+                    _cancellationToken),
+                Times.Once);
+        }
+
+        [Test, NonRecursiveAutoData]
+        public async Task ThenItShouldNotMapProviderManagementGroupCodeToEntityIfNotAvailable(string source, LearningProvider learningProvider)
+        {
+            learningProvider.ManagementGroup = null;
+            
+            await _manager.SyncLearningProviderAsync(source, learningProvider, _cancellationToken);
+
+            _entityManagerMock.Verify(m => m.SyncEntityAsync(
+                    It.Is<Entity>(e =>
+                        e.Data != null &&
+                        !e.Data.ContainsKey("managementGroupCode")),
+                    _cancellationToken),
+                Times.Once);
+        }
+
+        [Test, NonRecursiveAutoData]
         public async Task ThenItShouldMapSourceSystemIdFromUrnForGias(LearningProvider learningProvider)
                  {
             await _manager.SyncLearningProviderAsync(SourceSystemNames.GetInformationAboutSchools, learningProvider, _cancellationToken);
