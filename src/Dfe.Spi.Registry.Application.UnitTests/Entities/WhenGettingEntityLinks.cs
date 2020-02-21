@@ -12,7 +12,7 @@ using NUnit.Framework;
 
 namespace Dfe.Spi.Registry.Application.UnitTests.Entities
 {
-    public class WhenGettingSynonymousEntities
+    public class WhenGettingEntityLinks
     {
         private Mock<IEntityRepository> _entityRepositoryMock;
         private Mock<ILinkRepository> _linkRepositoryMock;
@@ -32,10 +32,10 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                 .ReturnsAsync(new Link
                 {
                     Id = "link1",
-                    Type = LinkTypes.Synonym,
+                    Type = LinkTypes.ManagementGroup,
                     LinkedEntities = new EntityLink[0]
                 });
-            
+
             _matchingQueueMock = new Mock<IMatchingQueue>();
 
             _loggerWrapperMock = new Mock<ILoggerWrapper>();
@@ -53,9 +53,8 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
         public async Task ThenItShouldGetEntityFromRepository(string entityType, string sourceSystemName,
             string sourceSystemId)
         {
-            var actual =
-                await _manager.GetSynonymousEntitiesAsync(entityType, sourceSystemName, sourceSystemId,
-                    _cancellationToken);
+            await _manager.GetEntityLinksAsync(entityType, sourceSystemName, sourceSystemId,
+                _cancellationToken);
 
             _entityRepositoryMock.Verify(
                 r => r.GetEntityAsync(entityType, sourceSystemName, sourceSystemId, _cancellationToken),
@@ -69,7 +68,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Entity) null);
 
-            var actual = await _manager.GetSynonymousEntitiesAsync("", "", "", _cancellationToken);
+            var actual = await _manager.GetEntityLinksAsync("", "", "", _cancellationToken);
 
             Assert.IsNull(actual);
         }
@@ -82,39 +81,38 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(entity);
 
-            var actual = await _manager.GetSynonymousEntitiesAsync(entity.Type, entity.SourceSystemName,
+            var actual = await _manager.GetEntityLinksAsync(entity.Type, entity.SourceSystemName,
                 entity.SourceSystemId, _cancellationToken);
 
             Assert.IsNull(actual);
         }
 
         [Test, AutoData]
-        public async Task ThenItShouldReturnNullIfEntityFoundWithLinksButNoneAreSynonyms(Entity entity)
+        public async Task ThenItShouldReturnNullIfEntityFoundWithLinksButOnlySynonyms(Entity entity)
         {
             entity.Links = new[]
             {
-                new LinkPointer {LinkType = "not-synonym"},
+                new LinkPointer {LinkType = LinkTypes.Synonym},
             };
             _entityRepositoryMock.Setup(r => r.GetEntityAsync(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(entity);
 
-            var actual = await _manager.GetSynonymousEntitiesAsync(entity.Type, entity.SourceSystemName,
+            var actual = await _manager.GetEntityLinksAsync(entity.Type, entity.SourceSystemName,
                 entity.SourceSystemId, _cancellationToken);
 
             Assert.IsNull(actual);
         }
 
         [Test, AutoData]
-        public async Task ThenItShouldLookupLinkedEntitiesForSynonym(Entity entity, LinkPointer linkPointer)
+        public async Task ThenItShouldLookupLinkedEntitiesForLink(Entity entity, LinkPointer linkPointer)
         {
-            linkPointer.LinkType = LinkTypes.Synonym;
             entity.Links = new[] {linkPointer};
             _entityRepositoryMock.Setup(r => r.GetEntityAsync(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(entity);
 
-            await _manager.GetSynonymousEntitiesAsync(entity.Type, entity.SourceSystemName, entity.SourceSystemId,
+            await _manager.GetEntityLinksAsync(entity.Type, entity.SourceSystemName, entity.SourceSystemId,
                 _cancellationToken);
 
             _linkRepositoryMock.Verify(
@@ -125,7 +123,6 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
         [Test, AutoData]
         public async Task ThenItShouldReturnPointersToLinkedEntities(Entity entity, LinkPointer linkPointer, Link link)
         {
-            linkPointer.LinkType = LinkTypes.Synonym;
             entity.Links = new[] {linkPointer};
             _entityRepositoryMock
                 .Setup(r => r.GetEntityAsync(
@@ -135,7 +132,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                 .Setup(r => r.GetLinkAsync(linkPointer.LinkType, linkPointer.LinkId, _cancellationToken))
                 .ReturnsAsync(link);
 
-            var actual = await _manager.GetSynonymousEntitiesAsync(entity.Type, entity.SourceSystemName,
+            var actual = await _manager.GetEntityLinksAsync(entity.Type, entity.SourceSystemName,
                 entity.SourceSystemId,
                 _cancellationToken);
 
@@ -147,11 +144,15 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                 var actualName = actual[i].SourceSystemName;
                 var expectedId = link.LinkedEntities[i].EntitySourceSystemId;
                 var actualId = actual[i].SourceSystemId;
+                var expectedLinkType = link.Type;
+                var actualLinkType = actual[i].LinkType;
 
                 Assert.AreEqual(expectedName, actualName,
                     $"Expected point {i} to have EntitySourceSystemName {expectedName} but had {actualName}");
                 Assert.AreEqual(expectedId, actualId,
                     $"Expected point {i} to have SourceSystemId {expectedId} but had {actualId}");
+                Assert.AreEqual(expectedLinkType, actualLinkType,
+                    $"Expected point {i} to have LinkType {expectedLinkType} but had {actualLinkType}");
             }
         }
 
@@ -159,7 +160,6 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
         public async Task ThenItShouldExcludeLinkToRequestEntityFromResult(Entity entity, LinkPointer linkPointer,
             Link link)
         {
-            linkPointer.LinkType = LinkTypes.Synonym;
             entity.Links = new[] {linkPointer};
             _entityRepositoryMock
                 .Setup(r => r.GetEntityAsync(
@@ -178,7 +178,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                 .Setup(r => r.GetLinkAsync(linkPointer.LinkType, linkPointer.LinkId, _cancellationToken))
                 .ReturnsAsync(link);
 
-            var actual = await _manager.GetSynonymousEntitiesAsync(entity.Type, entity.SourceSystemName,
+            var actual = await _manager.GetEntityLinksAsync(entity.Type, entity.SourceSystemName,
                 entity.SourceSystemId,
                 _cancellationToken);
 
@@ -187,6 +187,31 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
             Assert.IsFalse(actual.Any(x =>
                 x.SourceSystemName == entity.SourceSystemName &&
                 x.SourceSystemId == entity.SourceSystemId));
+        }
+
+        [Test, AutoData]
+        public async Task ThenItShouldNotReturnPointersToLinkedEntitiesThatAreSynonyms(Entity entity, LinkPointer linkPointer, LinkPointer synonymPointer, Link link, Link synonymLink)
+        {
+            synonymPointer.LinkType = LinkTypes.Synonym;
+            entity.Links = new[] {linkPointer, synonymPointer};
+            _entityRepositoryMock
+                .Setup(r => r.GetEntityAsync(
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(entity);
+            _linkRepositoryMock
+                .Setup(r => r.GetLinkAsync(linkPointer.LinkType, linkPointer.LinkId, _cancellationToken))
+                .ReturnsAsync(link);
+            _linkRepositoryMock
+                .Setup(r => r.GetLinkAsync(synonymPointer.LinkType, synonymPointer.LinkId, _cancellationToken))
+                .ReturnsAsync(synonymLink);
+
+            var actual = await _manager.GetEntityLinksAsync(entity.Type, entity.SourceSystemName,
+                entity.SourceSystemId,
+                _cancellationToken);
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(link.LinkedEntities.Length, actual.Length);
+            _linkRepositoryMock.Verify(r=>r.GetLinkAsync(synonymPointer.LinkType, synonymPointer.LinkId, _cancellationToken), Times.Never);
         }
     }
 }
