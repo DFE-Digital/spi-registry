@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.UnitTesting.Fixtures;
 using Dfe.Spi.Common.WellKnownIdentifiers;
-using Dfe.Spi.Models;
+using Dfe.Spi.Models.Entities;
 using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Application.LearningProviders;
 using Dfe.Spi.Registry.Domain;
@@ -47,6 +47,39 @@ namespace Dfe.Spi.Registry.Application.UnitTests.LearningProviders
                         e.Data != null &&
                         e.Data["urn"] == learningProvider.Urn.ToString() &&
                         e.Data["ukprn"] == learningProvider.Ukprn.Value.ToString()),
+                    _cancellationToken),
+                Times.Once);
+        }
+
+        [Test, NonRecursiveAutoData]
+        public async Task ThenItShouldMapProviderManagementGroupCodeToEntityIfAvailable(string source, LearningProvider learningProvider, string managementGroupCode)
+        {
+            learningProvider.ManagementGroup = new ManagementGroup
+            {
+                Code = managementGroupCode,
+            };
+            
+            await _manager.SyncLearningProviderAsync(source, learningProvider, _cancellationToken);
+
+            _entityManagerMock.Verify(m => m.SyncEntityAsync(
+                    It.Is<Entity>(e =>
+                        e.Data != null &&
+                        e.Data["managementGroupCode"] == learningProvider.ManagementGroup.Code),
+                    _cancellationToken),
+                Times.Once);
+        }
+
+        [Test, NonRecursiveAutoData]
+        public async Task ThenItShouldNotMapProviderManagementGroupCodeToEntityIfNotAvailable(string source, LearningProvider learningProvider)
+        {
+            learningProvider.ManagementGroup = null;
+            
+            await _manager.SyncLearningProviderAsync(source, learningProvider, _cancellationToken);
+
+            _entityManagerMock.Verify(m => m.SyncEntityAsync(
+                    It.Is<Entity>(e =>
+                        e.Data != null &&
+                        !e.Data.ContainsKey("managementGroupCode")),
                     _cancellationToken),
                 Times.Once);
         }

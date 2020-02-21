@@ -6,8 +6,8 @@ using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.UnitTesting.Fixtures;
 using Dfe.Spi.Models.Entities;
-using Dfe.Spi.Registry.Application.LearningProviders;
-using Dfe.Spi.Registry.Functions.LearningProviders;
+using Dfe.Spi.Registry.Application.ManagementGroups;
+using Dfe.Spi.Registry.Functions.ManagementGroups;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.AspNetCore.Mvc;
@@ -15,27 +15,27 @@ using Moq;
 using Newtonsoft.Json;
 using NUnit.Framework;
 
-namespace Dfe.Spi.Registry.Functions.UnitTests.LearningProviders
+namespace Dfe.Spi.Registry.Functions.UnitTests.ManagementGroups
 {
-    public class WhenSyncingALearningProvider
+    public class WhenSyncingAManagementGroup
     {
-        private Mock<ILearningProviderManager> _learningProviderManagerMock;
+        private Mock<IManagementGroupManager> _managementGroupManagerMock;
         private Mock<ILoggerWrapper> _loggerMock;
         private Mock<IHttpSpiExecutionContextManager> _executionContextManagerMock;
-        private SyncLearningProvider _function;
+        private SyncManagementGroup _function;
         private CancellationToken _cancellationToken;
 
         [SetUp]
         public void Arrange()
         {
-            _learningProviderManagerMock = new Mock<ILearningProviderManager>();
+            _managementGroupManagerMock = new Mock<IManagementGroupManager>();
 
             _loggerMock = new Mock<ILoggerWrapper>();
 
             _executionContextManagerMock = new Mock<IHttpSpiExecutionContextManager>();
 
-            _function = new SyncLearningProvider(
-                _learningProviderManagerMock.Object,
+            _function = new SyncManagementGroup(
+                _managementGroupManagerMock.Object,
                 _loggerMock.Object,
                 _executionContextManagerMock.Object);
 
@@ -43,21 +43,21 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.LearningProviders
         }
 
         [Test, NonRecursiveAutoData]
-        public async Task ThenItShouldCallLearningManagerWithDeserializedLearningProvider(
-            LearningProvider learningProvider, string source)
+        public async Task ThenItShouldCallManagementGroupManagerWithDeserializedManagementGroup(
+            ManagementGroup managementGroup, string source)
         {
             var req = new DefaultHttpRequest(new DefaultHttpContext())
             {
-                Body = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(learningProvider))),
+                Body = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(managementGroup))),
             };
 
             await _function.RunAsync(req, source, _cancellationToken);
 
-            _learningProviderManagerMock.Verify(m =>
-                    m.SyncLearningProviderAsync(
+            _managementGroupManagerMock.Verify(m =>
+                    m.SyncManagementGroupAsync(
                         source,
-                        It.Is<LearningProvider>(lp =>
-                            lp.Urn == learningProvider.Urn),
+                        It.Is<ManagementGroup>(mg =>
+                            mg.Code == managementGroup.Code),
                         _cancellationToken),
                 Times.Once);
         }

@@ -9,9 +9,9 @@
     <ItemGroup>
         <PackageReference Include="AutoFixture" Version="4.11.0" />
         <PackageReference Include="AutoFixture.NUnit3" Version="4.11.0" />
-        <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.0" />
+        <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.1" />
         <PackageReference Include="Dfe.Spi.Common.UnitTesting" Version="1.0.7" />
-        <PackageReference Include="Dfe.Spi.Common.WellKnownIdentifiers" Version="1.0.0" />
+        <PackageReference Include="Dfe.Spi.Common.WellKnownIdentifiers" Version="1.0.2" />
         <PackageReference Include="Moq" Version="4.13.1" />
         <PackageReference Include="nunit" Version="3.11.0" />
         <PackageReference Include="NUnit3TestAdapter" Version="3.11.0" />

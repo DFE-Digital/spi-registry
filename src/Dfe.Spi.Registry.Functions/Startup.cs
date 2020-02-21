@@ -6,6 +6,7 @@ using Dfe.Spi.Common.Logging;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Application.LearningProviders;
+using Dfe.Spi.Registry.Application.ManagementGroups;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
@@ -91,6 +92,7 @@ namespace Dfe.Spi.Registry.Functions
         {
             services.AddScoped<IEntityManager, EntityManager>();
             services.AddScoped<ILearningProviderManager, LearningProviderManager>();
+            services.AddScoped<IManagementGroupManager, ManagementGroupManager>();
         }
 
         private void AddRepositories(IServiceCollection services)
