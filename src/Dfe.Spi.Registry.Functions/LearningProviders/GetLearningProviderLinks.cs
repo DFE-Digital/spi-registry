@@ -12,15 +12,15 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 
 namespace Dfe.Spi.Registry.Functions.LearningProviders
 {
-    public class GetLearningProviderSynonyms
+    public class GetLearningProviderLinks
     {
-        private const string FunctionName = nameof(GetLearningProviderSynonyms);
+        private const string FunctionName = nameof(GetLearningProviderLinks);
         
         private readonly IEntityManager _entityManager;
         private readonly ILoggerWrapper _loggerWrapper;
         private readonly IHttpSpiExecutionContextManager _executionContextManager;
 
-        public GetLearningProviderSynonyms(
+        public GetLearningProviderLinks(
             IEntityManager entityManager,
             ILoggerWrapper loggerWrapper,
             IHttpSpiExecutionContextManager executionContextManager)
@@ -32,34 +32,34 @@ namespace Dfe.Spi.Registry.Functions.LearningProviders
 
         [FunctionName(FunctionName)]
         public async Task<IActionResult> RunAsync(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "learning-providers/{system}/{id}/synonyms")]
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "learning-providers/{system}/{id}/links")]
             HttpRequest req,
             string system,
             string id,
             CancellationToken cancellationToken)
         {
             _executionContextManager.SetContext(req.Headers);
-            _loggerWrapper.Info($"Starting to get synonyms for {TypeNames.LearningProvider}.{system}.{id}");
+            _loggerWrapper.Info($"Starting to get links for {TypeNames.LearningProvider}.{system}.{id}");
 
-            var synonyms =
-                await _entityManager.GetSynonymousEntitiesAsync(TypeNames.LearningProvider, system, id, cancellationToken);
-            if (synonyms == null)
+            var links =
+                await _entityManager.GetEntityLinksAsync(TypeNames.LearningProvider, system, id, cancellationToken);
+            if (links == null)
             {
                 _loggerWrapper.Info(
-                    $"Could not find entity/synonyms for {TypeNames.LearningProvider}.{system}.{id}. Returning not found");
+                    $"Could not find entity/links for {TypeNames.LearningProvider}.{system}.{id}. Returning not found");
                 return new NotFoundResult();
             }
 
-            var result = new GetSynonymsResponse
+            var result = new GetLinksResponse
             {
-                Synonyms = synonyms,
+                Links = links,
             };
             return new OkObjectResult(result);
         }
     }
 
-    public class GetSynonymsResponse
+    public class GetLinksResponse
     {
-        public EntityPointer[] Synonyms { get; set; }
+        public LinkedEntityPointer[] Links { get; set; }
     }
 }
