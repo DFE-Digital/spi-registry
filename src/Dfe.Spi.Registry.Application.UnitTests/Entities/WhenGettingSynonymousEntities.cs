@@ -32,7 +32,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                 .ReturnsAsync(new Link
                 {
                     Id = "link1",
-                    Type = "Synonym",
+                    Type = LinkTypes.Synonym,
                     LinkedEntities = new EntityLink[0]
                 });
             
@@ -108,7 +108,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
         [Test, AutoData]
         public async Task ThenItShouldLookupLinkedEntitiesForSynonym(Entity entity, LinkPointer linkPointer)
         {
-            linkPointer.LinkType = "Synonym";
+            linkPointer.LinkType = LinkTypes.Synonym;
             entity.Links = new[] {linkPointer};
             _entityRepositoryMock.Setup(r => r.GetEntityAsync(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -125,7 +125,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
         [Test, AutoData]
         public async Task ThenItShouldReturnPointersToLinkedEntities(Entity entity, LinkPointer linkPointer, Link link)
         {
-            linkPointer.LinkType = "Synonym";
+            linkPointer.LinkType = LinkTypes.Synonym;
             entity.Links = new[] {linkPointer};
             _entityRepositoryMock
                 .Setup(r => r.GetEntityAsync(
@@ -159,7 +159,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
         public async Task ThenItShouldExcludeLinkToRequestEntityFromResult(Entity entity, LinkPointer linkPointer,
             Link link)
         {
-            linkPointer.LinkType = "Synonym";
+            linkPointer.LinkType = LinkTypes.Synonym;
             entity.Links = new[] {linkPointer};
             _entityRepositoryMock
                 .Setup(r => r.GetEntityAsync(

@@ -73,7 +73,7 @@ namespace PopulateRegistryFromGiasEstablishments
                 {
                     link = new Link
                     {
-                        Type = "Synonym",
+                        Type = LinkTypes.Synonym,
                         Id = Guid.NewGuid().ToString(),
                         LinkedEntities = new[]
                         {

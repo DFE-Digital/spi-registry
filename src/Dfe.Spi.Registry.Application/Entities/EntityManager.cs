@@ -42,7 +42,7 @@ namespace Dfe.Spi.Registry.Application.Entities
         {
             var sourceEntity =
                 await _entityRepository.GetEntityAsync(entityType, sourceSystemName, sourceSystemId, cancellationToken);
-            var synonymLinkPointer = sourceEntity?.Links?.SingleOrDefault(l => l.LinkType == "Synonym");
+            var synonymLinkPointer = sourceEntity?.Links?.SingleOrDefault(l => l.LinkType == LinkTypes.Synonym);
             if (synonymLinkPointer == null)
             {
                 _logger.Info(
