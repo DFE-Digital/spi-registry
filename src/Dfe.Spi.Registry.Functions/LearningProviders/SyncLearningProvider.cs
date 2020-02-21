@@ -1,18 +1,14 @@
-using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
-using Dfe.Spi.Models;
-using Dfe.Spi.Registry.Application.Entities;
+using Dfe.Spi.Models.Entities;
 using Dfe.Spi.Registry.Application.LearningProviders;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Dfe.Spi.Registry.Functions.LearningProviders

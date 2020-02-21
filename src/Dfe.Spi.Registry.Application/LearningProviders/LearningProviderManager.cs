@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.WellKnownIdentifiers;
-using Dfe.Spi.Models;
+using Dfe.Spi.Models.Entities;
 using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Domain;
 using Dfe.Spi.Registry.Domain.Entities;

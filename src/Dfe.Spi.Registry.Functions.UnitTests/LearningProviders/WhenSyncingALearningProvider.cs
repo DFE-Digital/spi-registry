@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.UnitTesting.Fixtures;
-using Dfe.Spi.Models;
+using Dfe.Spi.Models.Entities;
 using Dfe.Spi.Registry.Application.LearningProviders;
 using Dfe.Spi.Registry.Functions.LearningProviders;
 using Microsoft.AspNetCore.Http;

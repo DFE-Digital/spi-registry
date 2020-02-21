@@ -8,8 +8,8 @@
     <ItemGroup>
         <PackageReference Include="CommandLineParser" Version="2.6.0" />
         <PackageReference Include="CsvHelper" Version="12.2.2" />
-        <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.0" />
-        <PackageReference Include="Dfe.Spi.Common.WellKnownIdentifiers" Version="1.0.0" />
+        <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.1" />
+        <PackageReference Include="Dfe.Spi.Common.WellKnownIdentifiers" Version="1.0.2" />
     </ItemGroup>
 
     <ItemGroup>
