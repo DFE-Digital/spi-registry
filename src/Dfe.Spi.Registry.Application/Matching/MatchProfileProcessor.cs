@@ -45,7 +45,7 @@ namespace Dfe.Spi.Registry.Application.Matching
                     var linkReason =
                         $"Matched using profile {profile.Name} against ruleset {matchResult.MatchingRuleset}";
 
-                    var existingPointer = source.Links.SingleOrDefault(lp => lp.LinkType == profile.LinkType);
+                    var existingPointer = source.Links?.SingleOrDefault(lp => lp.LinkType == profile.LinkType);
                     if (existingPointer != null)
                     {
                         link = await _linkRepository.GetLinkAsync(existingPointer.LinkType, existingPointer.LinkId,
@@ -75,7 +75,7 @@ namespace Dfe.Spi.Registry.Application.Matching
                             }
                         };
                     }
-                    
+
                     await _linkRepository.StoreAsync(link, cancellationToken);
 
                     await AppendLinkPointerAsync(source, link, cancellationToken);
@@ -122,7 +122,7 @@ namespace Dfe.Spi.Registry.Application.Matching
                     IsMatch = false,
                 };
             }
-            
+
             // OK, is it a match?
             foreach (var ruleset in profile.Rules)
             {
@@ -182,6 +182,11 @@ namespace Dfe.Spi.Registry.Application.Matching
 
         private async Task AppendLinkPointerAsync(Entity entity, Link link, CancellationToken cancellationToken)
         {
+            if (entity.Links != null && entity.Links.Any(lp => lp.LinkId == link.Id))
+            {
+                return;
+            }
+
             var linkPointer = new LinkPointer
             {
                 LinkId = link.Id,
