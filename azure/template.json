@@ -32,6 +32,11 @@
       "minLength": 2,
       "maxLength": 2,
       "defaultValue": "01"
+    },
+    "eapimIp": {
+      "type": "string",
+      "minLength": 7,
+      "maxLength": 15
     }
   },
   "variables": {
@@ -94,7 +99,7 @@
       }
     },
     {
-      "apiVersion": "2016-08-01",
+      "apiVersion": "2018-11-01",
       "type": "Microsoft.Web/sites",
       "name": "[variables('functionAppName')]",
       "location": "[resourceGroup().location]",
@@ -158,6 +163,14 @@
             {
               "name": "SPI_Queue__StorageQueueConnectionString",
               "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]"
+            }
+          ],
+          "ipSecurityRestrictions": [
+            {
+              "ipAddress": "[concat(parameters('eapimIp'), '/32')]",
+              "action": "Allow",
+              "name": "Allow EAPIM",
+              "priority": 1
             }
           ]
         }
