@@ -41,18 +41,41 @@ namespace Dfe.Spi.Registry.Application.Matching
                 var matchResult = AssessMatch(source, candidate, profile);
                 if (matchResult.IsMatch)
                 {
+                    Link link;
                     var linkReason =
                         $"Matched using profile {profile.Name} against ruleset {matchResult.MatchingRuleset}";
-                    var link = new Link
+
+                    var existingPointer = source.Links.SingleOrDefault(lp => lp.LinkType == profile.LinkType);
+                    if (existingPointer != null)
                     {
-                        Id = Guid.NewGuid().ToString(),
-                        Type = profile.LinkType,
-                        LinkedEntities = new[]
+                        link = await _linkRepository.GetLinkAsync(existingPointer.LinkType, existingPointer.LinkId,
+                            cancellationToken);
+                        if (link.LinkedEntities.Any(l => l.EntityType == candidate.Type &&
+                                                         l.EntitySourceSystemName == candidate.SourceSystemName &&
+                                                         l.EntitySourceSystemId == candidate.SourceSystemId))
                         {
-                            GetEntityLinkFromEntity(source, linkReason),
-                            GetEntityLinkFromEntity(candidate, linkReason),
+                            continue;
                         }
-                    };
+
+                        link.LinkedEntities = link.LinkedEntities.Concat(new[]
+                        {
+                            GetEntityLinkFromEntity(candidate, linkReason),
+                        }).ToArray();
+                    }
+                    else
+                    {
+                        link = new Link
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            Type = profile.LinkType,
+                            LinkedEntities = new[]
+                            {
+                                GetEntityLinkFromEntity(source, linkReason),
+                                GetEntityLinkFromEntity(candidate, linkReason),
+                            }
+                        };
+                    }
+                    
                     await _linkRepository.StoreAsync(link, cancellationToken);
 
                     await AppendLinkPointerAsync(source, link, cancellationToken);
@@ -91,17 +114,16 @@ namespace Dfe.Spi.Registry.Application.Matching
 
         private static MatchResult AssessMatch(Entity source, Entity candidate, MatchingProfile profile)
         {
-            if (source.Type == candidate.Type &&
-                source.SourceSystemName == candidate.SourceSystemName &&
-                source.SourceSystemId == candidate.SourceSystemId)
+            // Stop trying to match against self
+            if (AreTheSameEntity(source, candidate))
             {
-                // Can't match against self
                 return new MatchResult
                 {
                     IsMatch = false,
                 };
             }
             
+            // OK, is it a match?
             foreach (var ruleset in profile.Rules)
             {
                 var isMatch = true;
@@ -136,6 +158,13 @@ namespace Dfe.Spi.Registry.Application.Matching
             {
                 IsMatch = false,
             };
+        }
+
+        private static bool AreTheSameEntity(Entity source, Entity candidate)
+        {
+            return source.Type == candidate.Type &&
+                   source.SourceSystemName == candidate.SourceSystemName &&
+                   source.SourceSystemId == candidate.SourceSystemId;
         }
 
         private static EntityLink GetEntityLinkFromEntity(Entity entity, string reason)
