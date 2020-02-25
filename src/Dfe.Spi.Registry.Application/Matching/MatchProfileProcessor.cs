@@ -35,7 +35,7 @@ namespace Dfe.Spi.Registry.Application.Matching
             _logger.Info($"Starting to process {source} using profile {profile.Name}");
             profile = EnsureProfileSourceMatchesSourceEntityType(source.Type, profile);
 
-            var candidates = await _entityRepository.GetEntitiesOfTypeAsync(source.Type, cancellationToken);
+            var candidates = await _entityRepository.GetEntitiesOfTypeAsync(profile.CandidateType, cancellationToken);
             _logger.Info($"Found {candidates.Length} candidates for {source} when processing for profile {profile.Name}");
 
             foreach (var candidate in candidates)
@@ -141,7 +141,7 @@ namespace Dfe.Spi.Registry.Application.Matching
                 foreach (var criteria in ruleset.Criteria)
                 {
                     if (source.Data == null || !source.Data.ContainsKey(criteria.SourceAttribute) ||
-                        candidate.Data == null || !candidate.Data.ContainsKey(criteria.SourceAttribute))
+                        candidate.Data == null || !candidate.Data.ContainsKey(criteria.CandidateAttribute))
                     {
                         isMatch = false;
                         break;
