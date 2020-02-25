@@ -52,7 +52,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
 
             // Assert
             _entityRepositoryMock.Verify(r => r.GetEntitiesOfTypeAsync(
-                    source.Type, _cancellationToken),
+                    profile.CandidateType, _cancellationToken),
                 Times.Once);
         }
 
@@ -70,7 +70,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
 
             // Assert
             _entityRepositoryMock.Verify(r => r.GetEntitiesOfTypeAsync(
-                    source.Type, _cancellationToken),
+                    profile.SourceType, _cancellationToken),
                 Times.Once);
         }
 
@@ -100,7 +100,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
             var source = GetEntity();
             var candidate = GetEntity(Type2);
             var profile = GetMatchingProfile();
-            _entityRepositoryMock.Setup(r => r.GetEntitiesOfTypeAsync(source.Type, _cancellationToken))
+            _entityRepositoryMock.Setup(r => r.GetEntitiesOfTypeAsync(candidate.Type, _cancellationToken))
                 .ReturnsAsync(new[] {candidate});
 
             // Act
@@ -140,7 +140,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
                 new LinkPointer {LinkId = linkId, LinkType = profile.LinkType},
             };
 
-            _entityRepositoryMock.Setup(r => r.GetEntitiesOfTypeAsync(source.Type, _cancellationToken))
+            _entityRepositoryMock.Setup(r => r.GetEntitiesOfTypeAsync(candidate.Type, _cancellationToken))
                 .ReturnsAsync(new[] {candidate});
 
             _linkRepositoryMock.Setup(r => r.GetLinkAsync(profile.LinkType, linkId, _cancellationToken))
