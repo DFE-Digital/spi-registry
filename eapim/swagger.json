@@ -57,6 +57,184 @@
         }
       }
     },
+    "/learning-providers/{system}/{id}/links": {
+      "get": {
+        "description": "Gets learning provider links.",
+        "operationId": "get-learning-provider-links",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "system",
+            "type": "string",
+            "description": "The name of the system.",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "type": "string",
+            "description": "The id of the learning provider.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "description": "Bearer token authentication.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-Internal-Request-Id",
+            "type": "string",
+            "description": "An internal request id. Should be a vaild guid.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-External-Request-Id",
+            "description": "An optional external request id. Used in logging.",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Links were found, results are included in the body.",
+            "schema": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "/learning-providers/sync/{source}": {
+      "post": {
+        "description": "Sync learning provider.",
+        "operationId": "sync-learning-provider",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source",
+            "type": "string",
+            "description": "The name of the source system.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "description": "Bearer token authentication.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-Internal-Request-Id",
+            "type": "string",
+            "description": "An internal request id. Should be a vaild guid.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-External-Request-Id",
+            "description": "An optional external request id. Used in logging.",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Data accepted.",
+            "schema": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "/management-groups/sync/{source}": {
+      "post": {
+        "description": "Sync management group.",
+        "operationId": "sync-management-group",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source",
+            "type": "string",
+            "description": "The name of the source system.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "description": "Bearer token authentication.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-Internal-Request-Id",
+            "type": "string",
+            "description": "An internal request id. Should be a vaild guid.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-External-Request-Id",
+            "description": "An optional external request id. Used in logging.",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Data accepted.",
+            "schema": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "/matching/sync": {
+      "post": {
+        "description": "Processing matching for given entity",
+        "operationId": "update-entity-links",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "description": "Bearer token authentication.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-Internal-Request-Id",
+            "type": "string",
+            "description": "An internal request id. Should be a vaild guid.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-External-Request-Id",
+            "description": "An optional external request id. Used in logging.",
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "Entity pointer",
+            "description": "A pointer to the entity to match.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entity-pointer"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Matching completed"
+          } 
+        }
+      }
+    },
     "/HeartBeat": {
       "get": {
         "description": "Standard diagnostics method, used to test the health of the facade's underlying system.",
@@ -74,6 +252,22 @@
           "200": {
             "description": "The standard/only response from the method."
           }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "entity-pointer": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "sourceSystemName": {
+          "type": "string"
+        },
+        "sourceSystemId": {
+          "type": "string"
         }
       }
     }
