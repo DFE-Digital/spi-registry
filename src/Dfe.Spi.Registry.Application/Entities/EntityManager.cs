@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
+using Dfe.Spi.Registry.Domain.Matching;
 using Dfe.Spi.Registry.Domain.Queuing;
 
 namespace Dfe.Spi.Registry.Application.Entities

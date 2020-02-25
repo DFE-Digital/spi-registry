@@ -8,6 +8,8 @@ namespace Dfe.Spi.Registry.Domain.Entities
         Task<Entity> GetEntityAsync(string type, string sourceSystemName, string sourceSystemId,
             CancellationToken cancellationToken);
 
+        Task<Entity[]> GetEntitiesOfTypeAsync(string type, CancellationToken cancellationToken);
+
         Task StoreAsync(Entity entity, CancellationToken cancellationToken);
     }
 }

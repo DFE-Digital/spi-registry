@@ -7,9 +7,11 @@ using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Application.LearningProviders;
 using Dfe.Spi.Registry.Application.ManagementGroups;
+using Dfe.Spi.Registry.Application.Matching;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
+using Dfe.Spi.Registry.Domain.Matching;
 using Dfe.Spi.Registry.Domain.Queuing;
 using Dfe.Spi.Registry.Functions;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities;
@@ -93,13 +95,16 @@ namespace Dfe.Spi.Registry.Functions
             services.AddScoped<IEntityManager, EntityManager>();
             services.AddScoped<ILearningProviderManager, LearningProviderManager>();
             services.AddScoped<IManagementGroupManager, ManagementGroupManager>();
+            services.AddScoped<IMatchProfileProcessor, MatchProfileProcessor>();
+            services.AddScoped<IMatchManager, MatchManager>();
         }
 
         private void AddRepositories(IServiceCollection services)
         {
             services
                 .AddSingleton<IEntityRepository, TableEntityRepository>()
-                .AddSingleton<ILinkRepository, TableLinkRepository>();
+                .AddSingleton<ILinkRepository, TableLinkRepository>()
+                .AddSingleton<IMatchingProfileRepository, WellDefinedMatchingProfileRepository>();
         }
 
         private void AddQueues(IServiceCollection services)

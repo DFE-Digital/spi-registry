@@ -49,6 +49,10 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
             await Table.CreateIfNotExistsAsync(cancellationToken);
             
             var entity = ConvertModelToEntity(model);
+            if (string.IsNullOrEmpty(entity.ETag))
+            {
+                entity.ETag = "*";
+            }
 
             var operation = TableOperation.InsertOrReplace(entity);
             await Table.ExecuteAsync(operation, cancellationToken);
@@ -63,6 +67,10 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
             foreach (var model in models)
             {
                 var entity = ConvertModelToEntity(model);
+                if (string.IsNullOrEmpty(entity.ETag))
+                {
+                    entity.ETag = "*";
+                }
                 batch.InsertOrReplace(entity);
             }
             

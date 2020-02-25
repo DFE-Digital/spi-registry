@@ -5,6 +5,7 @@ using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
+using Dfe.Spi.Registry.Domain.Matching;
 using Dfe.Spi.Registry.Domain.Queuing;
 using Moq;
 using NUnit.Framework;

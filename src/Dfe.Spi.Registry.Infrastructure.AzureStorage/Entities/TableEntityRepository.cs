@@ -23,8 +23,12 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
             return entity;
         }
 
-        
-        
+        public async Task<Entity[]> GetEntitiesOfTypeAsync(string type, CancellationToken cancellationToken)
+        {
+            return await GetEntitiesInPartition(type.ToLower(), cancellationToken);
+        }
+
+
         public async Task StoreAsync(Entity entity, CancellationToken cancellationToken)
         {
             await InsertOrReplaceAsync(entity, cancellationToken);

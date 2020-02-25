@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Registry.Domain.Configuration;
+using Dfe.Spi.Registry.Domain.Matching;
 using Dfe.Spi.Registry.Domain.Queuing;
 
 namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Queuing
