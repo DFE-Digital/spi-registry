@@ -13,6 +13,7 @@ namespace Dfe.Spi.Registry.Application.Matching
             var profiles = new[]
             {
                 GetLearningProviderSynonymProfile(),
+                GetLearningProviderManagementGroupProfile(),
             };
             return Task.FromResult(profiles);
         }
@@ -55,6 +56,33 @@ namespace Dfe.Spi.Registry.Application.Matching
                 {
                     urnRuleset,
                     ukprnRuleset,
+                },
+            };
+        }
+        private MatchingProfile GetLearningProviderManagementGroupProfile()
+        {
+            var managementGroupRuleset = new MatchingRuleset
+            {
+                Name = "Match by management group code",
+                Criteria = new []
+                {
+                    new MatchingCriteria
+                    {
+                        SourceAttribute = "managementGroupCode",
+                        CandidateAttribute = "code",
+                    }, 
+                },
+            };
+            
+            return new MatchingProfile
+            {
+                Name = "Learning Provider Management Group",
+                SourceType = TypeNames.LearningProvider,
+                CandidateType = TypeNames.ManagementGroup,
+                LinkType = LinkTypes.ManagementGroup,
+                Rules = new []
+                {
+                    managementGroupRuleset,
                 },
             };
         }

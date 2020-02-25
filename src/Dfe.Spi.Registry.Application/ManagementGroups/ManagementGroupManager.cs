@@ -39,7 +39,10 @@ namespace Dfe.Spi.Registry.Application.ManagementGroups
                 Type = TypeNames.ManagementGroup,
                 SourceSystemName = source,
                 SourceSystemId = managementGroup.Code,
-                Data = new Dictionary<string, string>(),
+                Data = new Dictionary<string, string>
+                {
+                    { "code", managementGroup.Code },
+                },
             };
             
             _logger.Info(
