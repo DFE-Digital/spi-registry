@@ -31,6 +31,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{84B4B7F7
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateRegistryFromGiasEstablishments", "PopulateRegistryFromGiasEstablishments\PopulateRegistryFromGiasEstablishments.csproj", "{D5D95E98-A88E-42C1-993A-61DBB7E86873}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EAPIM", "EAPIM", "{C287458B-840F-4998-B003-5A6A804F228F}"
+ProjectSection(SolutionItems) = preProject
+	..\eapim\named-values.csv = ..\eapim\named-values.csv
+	..\eapim\oauth.xml = ..\eapim\oauth.xml
+	..\eapim\policy.xml = ..\eapim\policy.xml
+	..\eapim\swagger.json = ..\eapim\swagger.json
+EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,5 +80,6 @@ Global
 		{E6000FD0-AB1B-4672-9640-88FAEDF87FFA} = {1BAA8676-B72B-4E3B-8CAA-6EE704E95A27}
 		{EF305EA4-CAC5-4F6B-8D74-2AD9522C2416} = {1BAA8676-B72B-4E3B-8CAA-6EE704E95A27}
 		{D5D95E98-A88E-42C1-993A-61DBB7E86873} = {84B4B7F7-C7BE-4D07-BE6D-2A38164BAD34}
+		{C287458B-840F-4998-B003-5A6A804F228F} = {B2E320E0-3554-4B75-B661-72BC04A7B05C}
 	EndGlobalSection
 EndGlobal
