@@ -32,13 +32,16 @@ namespace Dfe.Spi.Registry.Application.Matching
 
         public async Task UpdateLinksAsync(Entity source, MatchingProfile profile, CancellationToken cancellationToken)
         {
+            _logger.Info($"Starting to process {source} using profile {profile.Name}");
             profile = EnsureProfileSourceMatchesSourceEntityType(source.Type, profile);
 
             var candidates = await _entityRepository.GetEntitiesOfTypeAsync(source.Type, cancellationToken);
+            _logger.Info($"Found {candidates.Length} candidates for {source} when processing for profile {profile.Name}");
 
             foreach (var candidate in candidates)
             {
                 var matchResult = AssessMatch(source, candidate, profile);
+                _logger.Debug($"{candidate} match result for {source} using profile is {matchResult.IsMatch}");
                 if (matchResult.IsMatch)
                 {
                     Link link;
@@ -48,15 +51,18 @@ namespace Dfe.Spi.Registry.Application.Matching
                     var existingPointer = source.Links?.SingleOrDefault(lp => lp.LinkType == profile.LinkType);
                     if (existingPointer != null)
                     {
+                        _logger.Info($"Source already has link of type {profile.LinkType}, will see if link needs updating using profile {profile.Name}");
                         link = await _linkRepository.GetLinkAsync(existingPointer.LinkType, existingPointer.LinkId,
                             cancellationToken);
                         if (link.LinkedEntities.Any(l => l.EntityType == candidate.Type &&
                                                          l.EntitySourceSystemName == candidate.SourceSystemName &&
                                                          l.EntitySourceSystemId == candidate.SourceSystemId))
                         {
+                            _logger.Info($"{source} and {candidate} are already linked with type {profile.LinkType} so no new links using profile {profile.Name}");
                             continue;
                         }
 
+                        _logger.Info($"Updating link {link.Id} to add {candidate}, for link to {source} using profile {profile.Name}");
                         link.LinkedEntities = link.LinkedEntities.Concat(new[]
                         {
                             GetEntityLinkFromEntity(candidate, linkReason),
@@ -64,6 +70,7 @@ namespace Dfe.Spi.Registry.Application.Matching
                     }
                     else
                     {
+                        _logger.Info($"{source} and {candidate} match resulting in new link of type {profile.LinkType} using profile {profile.Name}");
                         link = new Link
                         {
                             Id = Guid.NewGuid().ToString(),
@@ -76,9 +83,12 @@ namespace Dfe.Spi.Registry.Application.Matching
                         };
                     }
 
+                    _logger.Debug($"Updating link {link.Id} for {source} and {candidate} using profile {profile.Name}");
                     await _linkRepository.StoreAsync(link, cancellationToken);
 
+                    _logger.Debug($"Updating source entity {source} with link {link.Id} for {candidate} using profile {profile.Name}");
                     await AppendLinkPointerAsync(source, link, cancellationToken);
+                    _logger.Debug($"Updating candidate entity {candidate} with link {link.Id} for {source} using profile {profile.Name}");
                     await AppendLinkPointerAsync(candidate, link, cancellationToken);
                 }
             }

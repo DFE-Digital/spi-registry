@@ -35,6 +35,8 @@ namespace Dfe.Spi.Registry.Application.Matching
         {
             var source = await _entityRepository.GetEntityAsync(pointer.Type, pointer.SourceSystemName,
                 pointer.SourceSystemId, cancellationToken);
+            _logger.Debug($"Found source item for {pointer}");
+            
             var profiles = await GetProfilesForEntityTypeAsync(pointer.Type, cancellationToken);
 
             foreach (var profile in profiles)
@@ -47,10 +49,15 @@ namespace Dfe.Spi.Registry.Application.Matching
             CancellationToken cancellationToken)
         {
             var profiles = await _profileRepository.GetMatchingProfilesAsync(cancellationToken);
+            _logger.Info($"Found {profiles.Length} matching profiles");
+            
             var profilesForEntityType = profiles.Where(p =>
                 p.SourceType.Equals(entityType, StringComparison.InvariantCultureIgnoreCase) ||
-                p.CandidateType.Equals(entityType, StringComparison.InvariantCultureIgnoreCase));
-            return profilesForEntityType.ToArray();
+                p.CandidateType.Equals(entityType, StringComparison.InvariantCultureIgnoreCase))
+                .ToArray();
+            _logger.Info($"Found {profilesForEntityType.Length} matching profiles for type {entityType}");
+            
+            return profilesForEntityType;
         }
     }
 }
