@@ -147,7 +147,9 @@ namespace Dfe.Spi.Registry.Application.Matching
                         break;
                     }
 
-                    if (source.Data[criteria.SourceAttribute] != candidate.Data[criteria.CandidateAttribute])
+                    if (source.Data[criteria.SourceAttribute] != candidate.Data[criteria.CandidateAttribute] ||
+                        string.IsNullOrEmpty(source.Data[criteria.SourceAttribute]) ||
+                        string.IsNullOrEmpty(candidate.Data[criteria.CandidateAttribute]))
                     {
                         isMatch = false;
                         break;
