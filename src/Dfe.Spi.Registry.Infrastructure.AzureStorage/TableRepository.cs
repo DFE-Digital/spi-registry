@@ -61,20 +61,28 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
         protected async Task InsertOrReplaceBatchAsync(TModel[] models, CancellationToken cancellationToken)
         {
             await Table.CreateIfNotExistsAsync(cancellationToken);
-            
-            var batch = new TableBatchOperation();
 
-            foreach (var model in models)
+            const int batchSize = 100;
+            var position = 0;
+            do
             {
-                var entity = ConvertModelToEntity(model);
-                if (string.IsNullOrEmpty(entity.ETag))
+                var segment = models.Skip(position).Take(batchSize);
+                var batch = new TableBatchOperation();
+
+                foreach (var model in segment)
                 {
-                    entity.ETag = "*";
+                    var entity = ConvertModelToEntity(model);
+                    if (string.IsNullOrEmpty(entity.ETag))
+                    {
+                        entity.ETag = "*";
+                    }
+                    batch.InsertOrReplace(entity);
                 }
-                batch.InsertOrReplace(entity);
-            }
             
-            await Table.ExecuteBatchAsync(batch, cancellationToken);
+                await Table.ExecuteBatchAsync(batch, cancellationToken);
+
+                position += batchSize;
+            } while (position < models.Length);
         }
 
         protected abstract TModel ConvertEntityToModel(TEntity entity);
