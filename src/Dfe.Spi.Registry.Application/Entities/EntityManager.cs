@@ -143,13 +143,49 @@ namespace Dfe.Spi.Registry.Application.Entities
             CancellationToken cancellationToken)
         {
             var searchResults = await _searchIndex.SearchAsync(criteria, entityType, cancellationToken);
+
+            var results = new List<SynonymousEntities>();
+            foreach (var searchDocument in searchResults.Results)
+            {
+                var referenceParts = searchDocument.ReferencePointer.Split(':');
+                if (referenceParts[0] == "entity")
+                {
+                    results.Add(new SynonymousEntities
+                    {
+                        Entities = new[]
+                        {
+                            new EntityPointer
+                            {
+                                SourceSystemName = referenceParts[2],
+                                SourceSystemId = referenceParts[3],
+                            }, 
+                        }
+                    });
+                }
+                else if (referenceParts[0] == "link")
+                {
+                    var link = await _linkRepository.GetLinkAsync(referenceParts[1], referenceParts[2],
+                        cancellationToken);
+                    results.Add(new SynonymousEntities
+                    {
+                        Entities = link.LinkedEntities.Select(linkedEntity =>
+                            new EntityPointer
+                            {
+                                SourceSystemName = linkedEntity.EntitySourceSystemName,
+                                SourceSystemId = linkedEntity.EntitySourceSystemId,
+                            }).ToArray(),
+                    });
+                }
+                else
+                {
+                    throw new Exception(
+                        $"Search result had unexpected reference pointer '{searchDocument.ReferencePointer}'");
+                }
+            }
+            
             return new SynonymousEntitiesSearchResult
             {
-                Results = searchResults.Results.Select(r =>
-                    new SynonymousEntities
-                    {
-                        Entities = new[] {new EntityPointer {SourceSystemId = r.ReferencePointer}}
-                    }).ToArray(),
+                Results = results.ToArray(),
                 Skipped = searchResults.Skipped,
                 Taken = searchResults.Taken,
                 TotalNumberOfRecords = searchResults.TotalNumberOfRecords
