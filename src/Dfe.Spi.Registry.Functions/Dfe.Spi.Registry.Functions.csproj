@@ -6,12 +6,13 @@
     <ItemGroup>
         <PackageReference Include="Dfe.Spi.Common.Http.Server" Version="1.0.14" />
         <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.1" />
-        <PackageReference Include="Dfe.Spi.Common.Models" Version="1.0.3" />
+        <PackageReference Include="Dfe.Spi.Common.Models" Version="1.0.5" />
         <PackageReference Include="Dfe.Spi.Models" Version="1.0.16" />
         <PackageReference Include="Microsoft.Azure.Cosmos.Table" Version="1.0.6" />
         <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.0.0" />
         <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.0" />
         <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.29" />
+        <PackageReference Include="Microsoft.Spatial" Version="7.5.3" />
         <PackageReference Include="RestSharp" Version="106.6.10" />
     </ItemGroup>
     <ItemGroup>
@@ -26,6 +27,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Dfe.Spi.Registry.Application\Dfe.Spi.Registry.Application.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj" />
+      <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch\Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.AzureStorage\Dfe.Spi.Registry.Infrastructure.AzureStorage.csproj" />
     </ItemGroup>
 </Project>

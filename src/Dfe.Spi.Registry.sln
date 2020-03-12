@@ -43,6 +43,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SeedFromLearningProviderFil
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BulkMatch", "BulkMatch\BulkMatch.csproj", "{7398A15C-7969-409F-A947-A47C78F597E7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch", "Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch\Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch.csproj", "{C51AA19E-59B0-465B-9AEE-33BD814B3C03}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +87,10 @@ Global
 		{7398A15C-7969-409F-A947-A47C78F597E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7398A15C-7969-409F-A947-A47C78F597E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7398A15C-7969-409F-A947-A47C78F597E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C51AA19E-59B0-465B-9AEE-33BD814B3C03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C51AA19E-59B0-465B-9AEE-33BD814B3C03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C51AA19E-59B0-465B-9AEE-33BD814B3C03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C51AA19E-59B0-465B-9AEE-33BD814B3C03}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{043D77D1-345F-450B-AD95-678D5D3B14CA} = {B2E320E0-3554-4B75-B661-72BC04A7B05C}

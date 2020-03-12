@@ -56,6 +56,7 @@ namespace SeedFromLearningProviderFile
                 entityRepository,
                 linkRepository,
                 matchingQueue,
+                null,
                 _logger);
             
             _learningProviderManager = new LearningProviderManager(

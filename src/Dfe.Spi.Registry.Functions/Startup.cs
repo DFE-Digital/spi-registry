@@ -13,7 +13,9 @@ using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
 using Dfe.Spi.Registry.Domain.Matching;
 using Dfe.Spi.Registry.Domain.Queuing;
+using Dfe.Spi.Registry.Domain.Search;
 using Dfe.Spi.Registry.Functions;
+using Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Links;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Queuing;
@@ -48,6 +50,7 @@ namespace Dfe.Spi.Registry.Functions
             AddManagers(services);
             AddRepositories(services);
             AddQueues(services);
+            AddSearch(services);
         }
 
         private IConfigurationRoot BuildConfiguration()
@@ -70,6 +73,7 @@ namespace Dfe.Spi.Registry.Functions
             services.AddSingleton(_configuration.Entities);
             services.AddSingleton(_configuration.Links);
             services.AddSingleton(_configuration.Queue);
+            services.AddSingleton(_configuration.Search);
         }
 
         private void AddLogging(IServiceCollection services)
@@ -110,6 +114,11 @@ namespace Dfe.Spi.Registry.Functions
         private void AddQueues(IServiceCollection services)
         {
             services.AddScoped<IMatchingQueue, StorageMatchingQueue>();
+        }
+
+        private void AddSearch(IServiceCollection services)
+        {
+            services.AddScoped<ISearchIndex, AcsSearchIndex>();
         }
     }
 }

@@ -8,6 +8,7 @@ using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
 using Dfe.Spi.Registry.Domain.Matching;
 using Dfe.Spi.Registry.Domain.Queuing;
+using Dfe.Spi.Registry.Domain.Search;
 
 namespace Dfe.Spi.Registry.Application.Entities
 {
@@ -15,11 +16,14 @@ namespace Dfe.Spi.Registry.Application.Entities
     {
         Task<EntityPointer[]> GetSynonymousEntitiesAsync(string entityType, string sourceSystemName,
             string sourceSystemId, CancellationToken cancellationToken);
-        
+
         Task<LinkedEntityPointer[]> GetEntityLinksAsync(string entityType, string sourceSystemName,
             string sourceSystemId, CancellationToken cancellationToken);
 
         Task SyncEntityAsync(Entity entity, CancellationToken cancellationToken);
+
+        Task<SynonymousEntitiesSearchResult> SearchAsync(SearchRequest criteria, string entityType,
+            CancellationToken cancellationToken);
     }
 
     public class EntityManager : IEntityManager
@@ -27,22 +31,25 @@ namespace Dfe.Spi.Registry.Application.Entities
         private readonly IEntityRepository _entityRepository;
         private readonly ILinkRepository _linkRepository;
         private readonly IMatchingQueue _matchingQueue;
+        private readonly ISearchIndex _searchIndex;
         private readonly ILoggerWrapper _logger;
 
         public EntityManager(
             IEntityRepository entityRepository,
             ILinkRepository linkRepository,
             IMatchingQueue matchingQueue,
+            ISearchIndex searchIndex,
             ILoggerWrapper logger)
         {
             _entityRepository = entityRepository;
             _linkRepository = linkRepository;
             _matchingQueue = matchingQueue;
+            _searchIndex = searchIndex;
             _logger = logger;
         }
 
         public async Task<EntityPointer[]> GetSynonymousEntitiesAsync(
-            string entityType, 
+            string entityType,
             string sourceSystemName,
             string sourceSystemId,
             CancellationToken cancellationToken)
@@ -78,7 +85,7 @@ namespace Dfe.Spi.Registry.Application.Entities
         }
 
         public async Task<LinkedEntityPointer[]> GetEntityLinksAsync(
-            string entityType, 
+            string entityType,
             string sourceSystemName,
             string sourceSystemId,
             CancellationToken cancellationToken)
@@ -113,7 +120,7 @@ namespace Dfe.Spi.Registry.Application.Entities
                     .ToArray();
                 _logger.Info(
                     $"Found {linkEntityPointers} entities in the link {linkPointer} (Looked up for {entityType}:{sourceSystemName}:{sourceSystemId})");
-                
+
                 entityPointers.AddRange(linkEntityPointers);
             }
 
@@ -130,6 +137,23 @@ namespace Dfe.Spi.Registry.Application.Entities
                 SourceSystemName = entity.SourceSystemName,
                 SourceSystemId = entity.SourceSystemId,
             }, cancellationToken);
+        }
+
+        public async Task<SynonymousEntitiesSearchResult> SearchAsync(SearchRequest criteria, string entityType,
+            CancellationToken cancellationToken)
+        {
+            var searchResults = await _searchIndex.SearchAsync(criteria, entityType, cancellationToken);
+            return new SynonymousEntitiesSearchResult
+            {
+                Results = searchResults.Results.Select(r =>
+                    new SynonymousEntities
+                    {
+                        Entities = new[] {new EntityPointer {SourceSystemId = r.ReferencePointer}}
+                    }).ToArray(),
+                Skipped = searchResults.Skipped,
+                Taken = searchResults.Taken,
+                TotalNumberOfRecords = searchResults.TotalNumberOfRecords
+            };
         }
     }
 }
