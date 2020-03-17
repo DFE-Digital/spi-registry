@@ -20,6 +20,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
         private readonly SearchConfiguration _configuration;
         private readonly ILoggerWrapper _logger;
 
+
         static AcsSearchIndex()
         {
             var properties = typeof(AcsSearchDocument).GetProperties();
@@ -50,6 +51,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
             _configuration = configuration;
             _logger = logger;
         }
+
 
         public async Task<SearchIndexResult> SearchAsync(SearchRequest request, string entityType,
             CancellationToken cancellationToken)
@@ -84,6 +86,37 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
                 };
             }
         }
+
+        public async Task AddOrUpdateAsync(SearchDocument document, CancellationToken cancellationToken)
+        {
+            await AddOrUpdateBatchAsync(new[] {document}, cancellationToken);
+        }
+
+        public async Task AddOrUpdateBatchAsync(SearchDocument[] documents, CancellationToken cancellationToken)
+        {
+            using (var client = GetIndexClient())
+            {
+                var batch = IndexBatch.Upload(documents.Select(ConvertModelToSearchDocument));
+
+                await client.Documents.IndexAsync(batch, cancellationToken: cancellationToken);
+            }
+        }
+
+        public async Task DeleteAsync(SearchDocument document, CancellationToken cancellationToken)
+        {
+            await DeleteBatchAsync(new[] {document}, cancellationToken);
+        }
+
+        public async Task DeleteBatchAsync(SearchDocument[] documents, CancellationToken cancellationToken)
+        {
+            using (var client = GetIndexClient())
+            {
+                var batch = IndexBatch.Delete(documents.Select(ConvertModelToSearchDocument));
+
+                await client.Documents.IndexAsync(batch, cancellationToken: cancellationToken);
+            }
+        }
+
 
         private SearchIndexClient GetIndexClient()
         {
@@ -129,6 +162,32 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
             }
 
             return search;
+        }
+
+        private AcsSearchDocument ConvertModelToSearchDocument(SearchDocument model)
+        {
+            return new AcsSearchDocument
+            {
+                Id = model.Id,
+                SortableEntityName = model.SortableEntityName,
+                EntityType = model.EntityType,
+                ReferencePointer = model.ReferencePointer,
+                Name = model.Name,
+                Type = model.Type,
+                SubType = model.SubType,
+                OpenDate = model.OpenDate,
+                CloseDate = model.CloseDate,
+                Urn = model.Urn,
+                Ukprn = model.Ukprn,
+                Uprn = model.Uprn,
+                CompaniesHouseNumber = model.CompaniesHouseNumber,
+                CharitiesCommissionNumber = model.CharitiesCommissionNumber,
+                AcademyTrustCode = model.AcademyTrustCode,
+                DfeNumber = model.DfeNumber,
+                LocalAuthorityCode = model.LocalAuthorityCode,
+                ManagementGroupType = model.ManagementGroupType,
+                ManagementGroupId = model.ManagementGroupId,
+            };
         }
     }
 }

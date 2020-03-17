@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dfe.Spi.Common.Extensions;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.WellKnownIdentifiers;
 using Dfe.Spi.Models.Entities;
@@ -34,16 +36,32 @@ namespace Dfe.Spi.Registry.Application.LearningProviders
         public async Task SyncLearningProviderAsync(string source, LearningProvider learningProvider,
             CancellationToken cancellationToken)
         {
+            var data = (new Dictionary<string, string>
+                {
+                    {DataAttributeNames.Name, learningProvider.Name},
+                    {DataAttributeNames.Type, learningProvider.Type},
+                    {DataAttributeNames.SubType, learningProvider.SubType},
+                    {DataAttributeNames.OpenDate, learningProvider.OpenDate?.ToSpiString()},
+                    {DataAttributeNames.CloseDate, learningProvider.CloseDate?.ToSpiString()},
+                    {DataAttributeNames.Urn, learningProvider.Urn.ToString()},
+                    {DataAttributeNames.Ukprn, learningProvider.Ukprn?.ToString()},
+                    {DataAttributeNames.Uprn, learningProvider.Uprn},
+                    {DataAttributeNames.CompaniesHouseNumber, learningProvider.CompaniesHouseNumber},
+                    {DataAttributeNames.CharitiesCommissionNumber, learningProvider.CharitiesCommissionNumber},
+                    {DataAttributeNames.AcademyTrustCode, learningProvider.AcademyTrustCode},
+                    {DataAttributeNames.DfeNumber, learningProvider.DfeNumber},
+                    {DataAttributeNames.LocalAuthorityCode, learningProvider.LocalAuthorityCode},
+                    {DataAttributeNames.ManagementGroupType, learningProvider.ManagementGroup?.Type},
+                    {DataAttributeNames.ManagementGroupId, learningProvider.ManagementGroup?.Code},
+                }).Where(kvp => kvp.Value != null)
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            
             var entity = new Entity
             {
                 Type = TypeNames.LearningProvider,
                 SourceSystemName = source,
                 SourceSystemId = GetSourceSystemId(source, learningProvider),
-                Data = new Dictionary<string, string>
-                {
-                    {"urn", learningProvider.Urn.ToString()},
-                    {"ukprn", learningProvider.Ukprn.HasValue ? learningProvider.Ukprn.Value.ToString() : null},
-                },
+                Data = data,
             };
             if (learningProvider.ManagementGroup != null)
             {

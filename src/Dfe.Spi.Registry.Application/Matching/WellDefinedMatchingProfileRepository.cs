@@ -13,7 +13,7 @@ namespace Dfe.Spi.Registry.Application.Matching
             var profiles = new[]
             {
                 GetLearningProviderSynonymProfile(),
-                GetLearningProviderManagementGroupProfile(),
+                // GetLearningProviderManagementGroupProfile(),
             };
             return Task.FromResult(profiles);
         }

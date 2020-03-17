@@ -99,6 +99,8 @@ namespace Dfe.Spi.Registry.Functions
             services.AddScoped<IEntityManager, EntityManager>();
             services.AddScoped<ILearningProviderManager, LearningProviderManager>();
             services.AddScoped<IManagementGroupManager, ManagementGroupManager>();
+            
+            services.AddScoped<IEntityLinker, EntityLinker>();
             services.AddScoped<IMatchProfileProcessor, MatchProfileProcessor>();
             services.AddScoped<IMatchManager, MatchManager>();
         }

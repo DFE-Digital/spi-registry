@@ -6,6 +6,7 @@ using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Application.Matching;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Matching;
+using Dfe.Spi.Registry.Domain.Search;
 using Moq;
 using NUnit.Framework;
 
@@ -16,6 +17,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
         private Mock<IEntityRepository> _entityRepositoryMock;
         private Mock<IMatchingProfileRepository> _profileRepositoryMock;
         private Mock<IMatchProfileProcessor> _matchProfileProcessorMock;
+        private Mock<ISearchIndex> _searchIndexMock;
         private Mock<ILoggerWrapper> _loggerMock;
         private MatchManager _manager;
         private CancellationToken _cancellationToken;
@@ -31,6 +33,17 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
             _profileRepositoryMock = new Mock<IMatchingProfileRepository>();
 
             _matchProfileProcessorMock = new Mock<IMatchProfileProcessor>();
+            
+            _searchIndexMock = new Mock<ISearchIndex>();
+            _searchIndexMock.Setup(idx =>
+                    idx.SearchAsync(It.IsAny<SearchRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new SearchIndexResult
+                {
+                    Results = new SearchDocument[0],
+                    Skipped = 0,
+                    Taken = 100,
+                    TotalNumberOfRecords = 0,
+                });
 
             _loggerMock = new Mock<ILoggerWrapper>();
 
@@ -38,6 +51,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
                 _entityRepositoryMock.Object,
                 _profileRepositoryMock.Object,
                 _matchProfileProcessorMock.Object,
+                _searchIndexMock.Object,
                 _loggerMock.Object);
 
             _cancellationToken = new CancellationToken();
@@ -51,7 +65,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
             _entityRepositoryMock.Verify(r => r.GetEntityAsync(
                     entityForMatching.Type, entityForMatching.SourceSystemName, entityForMatching.SourceSystemId,
                     _cancellationToken),
-                Times.Once);
+                Times.Exactly(2));
         }
 
         [Test, AutoData]

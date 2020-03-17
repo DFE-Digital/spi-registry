@@ -7,6 +7,7 @@ using Dfe.Spi.Registry.Application.Matching;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
 using Dfe.Spi.Registry.Domain.Matching;
+using Dfe.Spi.Registry.Domain.Search;
 using Moq;
 using NUnit.Framework;
 
@@ -19,6 +20,8 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
 
         private Mock<IEntityRepository> _entityRepositoryMock;
         private Mock<ILinkRepository> _linkRepositoryMock;
+        private Mock<ISearchIndex> _searchIndexMock;
+        private Mock<IEntityLinker> _entityLinkerMock;
         private Mock<ILoggerWrapper> _loggerMock;
         private MatchProfileProcessor _processor;
         private CancellationToken _cancellationToken;
@@ -30,48 +33,29 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
 
             _linkRepositoryMock = new Mock<ILinkRepository>();
 
+            _searchIndexMock = new Mock<ISearchIndex>();
+            _searchIndexMock.Setup(idx =>
+                    idx.SearchAsync(It.IsAny<SearchRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new SearchIndexResult
+                {
+                    Results = new SearchDocument[0],
+                    Skipped = 0,
+                    Taken = 100,
+                    TotalNumberOfRecords = 0,
+                });
+
+            _entityLinkerMock = new Mock<IEntityLinker>();
+
             _loggerMock = new Mock<ILoggerWrapper>();
 
             _processor = new MatchProfileProcessor(
                 _entityRepositoryMock.Object,
                 _linkRepositoryMock.Object,
+                _searchIndexMock.Object,
+                _entityLinkerMock.Object,
                 _loggerMock.Object);
 
             _cancellationToken = new CancellationToken();
-        }
-
-        [Test]
-        public async Task ThenItShouldGetAllEntitiesOfCandidateType()
-        {
-            // Arrange
-            var source = GetEntity();
-            var profile = GetMatchingProfile();
-
-            // Act
-            await _processor.UpdateLinksAsync(source, profile, _cancellationToken);
-
-            // Assert
-            _entityRepositoryMock.Verify(r => r.GetEntitiesOfTypeAsync(
-                    profile.CandidateType, _cancellationToken),
-                Times.Once);
-        }
-
-        [Test]
-        public async Task ThenItShouldGetAllEntitiesOfSourceTypeWhenSourceTypeIsCandidate()
-        {
-            // Arrange
-            var source = GetEntity();
-            var profile = GetMatchingProfile();
-            profile.SourceType = Type2;
-            profile.CandidateType = Type1;
-
-            // Act
-            await _processor.UpdateLinksAsync(source, profile, _cancellationToken);
-
-            // Assert
-            _entityRepositoryMock.Verify(r => r.GetEntitiesOfTypeAsync(
-                    profile.SourceType, _cancellationToken),
-                Times.Once);
         }
 
         [Test]
@@ -94,92 +78,40 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
         }
 
         [Test]
-        public async Task ThenItShouldCreateLinkAndAddToBothEntitiesIfNotLinkFound()
+        public async Task ThenItShouldLinkSourceAndCandidateIfMatchSournce()
         {
             // Arrange
             var source = GetEntity();
             var candidate = GetEntity(Type2);
             var profile = GetMatchingProfile();
-            _entityRepositoryMock.Setup(r => r.GetEntitiesOfTypeAsync(candidate.Type, _cancellationToken))
-                .ReturnsAsync(new[] {candidate});
-
-            // Act
-            await _processor.UpdateLinksAsync(source, profile, _cancellationToken);
-
-            // Assert
-            _linkRepositoryMock.Verify(r => r.StoreAsync(
-                    It.Is<Link>(link =>
-                        link.Type == profile.LinkType &&
-                        link.LinkedEntities != null &&
-                        link.LinkedEntities.Length == 2 &&
-                        link.LinkedEntities[0].EntityType == source.Type &&
-                        link.LinkedEntities[1].EntityType == candidate.Type),
-                    It.IsAny<CancellationToken>()),
-                Times.Once);
-            _entityRepositoryMock.Verify(r => r.StoreAsync(source, _cancellationToken),
-                Times.Once);
-            _entityRepositoryMock.Verify(r => r.StoreAsync(candidate, _cancellationToken),
-                Times.Once);
-            Assert.AreEqual(1, source.Links?.Length);
-            Assert.AreEqual(profile.LinkType, source.Links[0].LinkType);
-            Assert.AreEqual(1, candidate.Links?.Length);
-            Assert.AreEqual(profile.LinkType, candidate.Links[0].LinkType);
-        }
-
-        [Test]
-        public async Task ThenItShouldAddCandidateToLinkIfSourceAlreadyHasLinkOfType()
-        {
-            // Arrange
-            var source = GetEntity();
-            var candidate = GetEntity(Type2);
-            var profile = GetMatchingProfile();
-            var linkId = Guid.NewGuid().ToString();
-
-            source.Links = new[]
-            {
-                new LinkPointer {LinkId = linkId, LinkType = profile.LinkType},
-            };
-
-            _entityRepositoryMock.Setup(r => r.GetEntitiesOfTypeAsync(candidate.Type, _cancellationToken))
-                .ReturnsAsync(new[] {candidate});
-
-            _linkRepositoryMock.Setup(r => r.GetLinkAsync(profile.LinkType, linkId, _cancellationToken))
-                .ReturnsAsync(new Link
+            _searchIndexMock.Setup(idx =>
+                    idx.SearchAsync(It.IsAny<SearchRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new SearchIndexResult
                 {
-                    Id = linkId,
-                    Type = profile.LinkType,
-                    LinkedEntities = new[]
+                    Results = new[]
                     {
-                        new EntityLink
+                        new SearchDocument
                         {
-                            EntityType = source.Type,
-                            EntitySourceSystemName = source.SourceSystemName,
-                            EntitySourceSystemId = source.SourceSystemId,
+                            EntityType = candidate.Type,
+                            ReferencePointer =
+                                $"entity:{candidate.Type}:{candidate.SourceSystemName}:{candidate.SourceSystemId}",
                         },
-                    }
+                    },
+                    Skipped = 0,
+                    Taken = 100,
+                    TotalNumberOfRecords = 0,
                 });
+            _entityRepositoryMock.Setup(r => r.GetEntityAsync(candidate.Type, candidate.SourceSystemName,
+                    candidate.SourceSystemId, _cancellationToken))
+                .ReturnsAsync(candidate);
 
             // Act
             await _processor.UpdateLinksAsync(source, profile, _cancellationToken);
 
             // Assert
-            _linkRepositoryMock.Verify(r => r.StoreAsync(
-                    It.Is<Link>(link =>
-                        link.Type == profile.LinkType &&
-                        link.LinkedEntities != null &&
-                        link.LinkedEntities.Length == 2 &&
-                        link.LinkedEntities[0].EntityType == source.Type &&
-                        link.LinkedEntities[1].EntityType == candidate.Type),
-                    It.IsAny<CancellationToken>()),
+            _entityLinkerMock.Verify(lnkr => lnkr.LinkEntitiesAsync(
+                    source, candidate, profile, profile.Rules[0].Name, _cancellationToken),
                 Times.Once);
-            _entityRepositoryMock.Verify(r => r.StoreAsync(source, _cancellationToken),
-                Times.Never);
-            _entityRepositoryMock.Verify(r => r.StoreAsync(candidate, _cancellationToken),
-                Times.Once);
-            Assert.AreEqual(1, source.Links?.Length);
-            Assert.AreEqual(profile.LinkType, source.Links[0].LinkType);
-            Assert.AreEqual(1, candidate.Links?.Length);
-            Assert.AreEqual(profile.LinkType, candidate.Links[0].LinkType);
         }
 
         [Test]
@@ -246,6 +178,8 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
                 {
                     {"urn", "123456"},
                 },
+                SourceSystemName = "GIAS",
+                SourceSystemId = "123456",
             };
         }
 

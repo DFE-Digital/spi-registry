@@ -65,12 +65,15 @@ namespace BulkMatch
             var matchProfileProcessor = new MatchProfileProcessor(
                 _entityRepository,
                 linkRepository,
+                null,
+                null,
                 _logger);
 
             _matchManager = new MatchManager(
                 _entityRepository,
                 profileRepository,
                 matchProfileProcessor,
+                null,
                 _logger);
         }
 
