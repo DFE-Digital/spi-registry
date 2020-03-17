@@ -13,7 +13,7 @@ namespace Dfe.Spi.Registry.Application.Matching
             var profiles = new[]
             {
                 GetLearningProviderSynonymProfile(),
-                // GetLearningProviderManagementGroupProfile(),
+                GetLearningProviderManagementGroupProfile(),
             };
             return Task.FromResult(profiles);
         }
@@ -28,8 +28,8 @@ namespace Dfe.Spi.Registry.Application.Matching
                 {
                     new MatchingCriteria
                     {
-                        SourceAttribute = "urn",
-                        CandidateAttribute = "urn",
+                        SourceAttribute = DataAttributeNames.Urn,
+                        CandidateAttribute = DataAttributeNames.Urn,
                     }, 
                 },
             };
@@ -40,8 +40,8 @@ namespace Dfe.Spi.Registry.Application.Matching
                 {
                     new MatchingCriteria
                     {
-                        SourceAttribute = "ukprn",
-                        CandidateAttribute = "ukprn",
+                        SourceAttribute = DataAttributeNames.Ukprn,
+                        CandidateAttribute = DataAttributeNames.Ukprn,
                     }, 
                 },
             };
@@ -68,8 +68,8 @@ namespace Dfe.Spi.Registry.Application.Matching
                 {
                     new MatchingCriteria
                     {
-                        SourceAttribute = "managementGroupCode",
-                        CandidateAttribute = "code",
+                        SourceAttribute = DataAttributeNames.ManagementGroupId,
+                        CandidateAttribute = DataAttributeNames.ManagementGroupId,
                     }, 
                 },
             };
