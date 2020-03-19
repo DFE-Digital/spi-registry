@@ -98,7 +98,7 @@ namespace Dfe.Spi.Registry.Application.Matching
                             ? source.Data[criteria.SourceAttribute]
                             : null,
                     }).ToArray();
-                if (filter.Any(kvp => kvp.Value == null))
+                if (filter.Any(kvp => string.IsNullOrEmpty(kvp.Value)))
                 {
                     // Cannot match if source does not have the value
                     continue;
