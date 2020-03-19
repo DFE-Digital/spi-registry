@@ -111,6 +111,7 @@ namespace Dfe.Spi.Registry.Application.Matching
                         new SearchGroup
                         {
                             Filter = filter,
+                            CombinationOperator = "and",
                         },
                     },
                     CombinationOperator = "and",

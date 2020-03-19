@@ -13,12 +13,15 @@ using Microsoft.Azure.Search.Models;
 
 namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
 {
-    public class AcsSearchIndex : ISearchIndex
+    public class AcsSearchIndex : ISearchIndex, IDisposable
     {
+        private const int AcsIndexBatchSize = 100;
+        
         private static readonly SearchFieldDefinition[] FieldDefinitions;
 
         private readonly SearchConfiguration _configuration;
         private readonly ILoggerWrapper _logger;
+        private readonly SearchIndexClient _client;
 
 
         static AcsSearchIndex()
@@ -50,41 +53,41 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
         {
             _configuration = configuration;
             _logger = logger;
+
+            _client = new SearchIndexClient(_configuration.AzureCognitiveSearchServiceName, _configuration.IndexName,
+                new SearchCredentials(_configuration.AzureCognitiveSearchKey));
         }
 
 
         public async Task<SearchIndexResult> SearchAsync(SearchRequest request, string entityType,
             CancellationToken cancellationToken)
         {
-            using (var client = GetIndexClient())
-            {
-                var search = BuildSearch(request, entityType);
-                _logger.Info(
-                    $"Search ACS with query {search.Query} and filter {search.Filter} for items {request.Skip} to {request.Skip + request.Take}...");
+            var search = BuildSearch(request, entityType);
+            _logger.Info(
+                $"Search ACS with query {search.Query} and filter {search.Filter} for items {request.Skip} to {request.Skip + request.Take}...");
 
-                var results = await client.Documents.SearchAsync<AcsSearchDocument>(
-                    search.Query,
-                    new SearchParameters
-                    {
-                        QueryType = QueryType.Full,
-                        Filter = search.Filter,
-                        Skip = request.Skip,
-                        Top = request.Take,
-                        OrderBy = new[] {"Id"},
-                        IncludeTotalResultCount = true,
-                    },
-                    cancellationToken: cancellationToken);
-
-                var documents = results.Results.Select(acs => acs.Document).ToArray();
-
-                return new SearchIndexResult()
+            var results = await _client.Documents.SearchAsync<AcsSearchDocument>(
+                search.Query,
+                new SearchParameters
                 {
-                    Results = documents,
-                    Skipped = request.Skip,
-                    Taken = request.Take,
-                    TotalNumberOfRecords = results.Count ?? 0,
-                };
-            }
+                    QueryType = QueryType.Full,
+                    Filter = search.Filter,
+                    Skip = request.Skip,
+                    Top = request.Take,
+                    OrderBy = new[] {"Id"},
+                    IncludeTotalResultCount = true,
+                },
+                cancellationToken: cancellationToken);
+
+            var documents = results.Results.Select(acs => acs.Document).ToArray();
+
+            return new SearchIndexResult()
+            {
+                Results = documents,
+                Skipped = request.Skip,
+                Taken = request.Take,
+                TotalNumberOfRecords = results.Count ?? 0,
+            };
         }
 
         public async Task AddOrUpdateAsync(SearchDocument document, CancellationToken cancellationToken)
@@ -94,11 +97,16 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
 
         public async Task AddOrUpdateBatchAsync(SearchDocument[] documents, CancellationToken cancellationToken)
         {
-            using (var client = GetIndexClient())
+            var index = 0;
+            while (index < documents.Length)
             {
-                var batch = IndexBatch.Upload(documents.Select(ConvertModelToSearchDocument));
+                var batchOfDocuments = documents.Skip(index).Take(AcsIndexBatchSize);
+                
+                var indexBatch = IndexBatch.Upload(batchOfDocuments.Select(ConvertModelToSearchDocument));
 
-                await client.Documents.IndexAsync(batch, cancellationToken: cancellationToken);
+                await _client.Documents.IndexAsync(indexBatch, cancellationToken: cancellationToken);
+                
+                index += AcsIndexBatchSize;
             }
         }
 
@@ -109,20 +117,19 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
 
         public async Task DeleteBatchAsync(SearchDocument[] documents, CancellationToken cancellationToken)
         {
-            using (var client = GetIndexClient())
+            var index = 0;
+            while (index < documents.Length)
             {
-                var batch = IndexBatch.Delete(documents.Select(ConvertModelToSearchDocument));
+                var batchOfDocuments = documents.Skip(index).Take(AcsIndexBatchSize);
+                
+                var indexBatch = IndexBatch.Delete(batchOfDocuments.Select(ConvertModelToSearchDocument));
 
-                await client.Documents.IndexAsync(batch, cancellationToken: cancellationToken);
+                await _client.Documents.IndexAsync(indexBatch, cancellationToken: cancellationToken);
+                
+                index += AcsIndexBatchSize;
             }
         }
 
-
-        private SearchIndexClient GetIndexClient()
-        {
-            return new SearchIndexClient(_configuration.AzureCognitiveSearchServiceName, _configuration.IndexName,
-                new SearchCredentials(_configuration.AzureCognitiveSearchKey));
-        }
 
         private AcsSearch BuildSearch(SearchRequest request, string entityType)
         {
@@ -188,6 +195,11 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
                 ManagementGroupType = model.ManagementGroupType,
                 ManagementGroupId = model.ManagementGroupId,
             };
+        }
+
+        public void Dispose()
+        {
+            _client?.Dispose();
         }
     }
 }
