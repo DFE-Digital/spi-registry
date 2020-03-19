@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,22 +29,23 @@ namespace BulkMatch
         {
             Init(options);
 
-            var startTime = DateTime.Now;
-
             _logger.Info("Loading learning providers...");
             var learningProviders =
                 await _entityRepository.GetEntitiesOfTypeAsync(TypeNames.LearningProvider, cancellationToken);
             _logger.Info($"Loaded {learningProviders.Length} learning providers for matching");
 
-            _logger.Info("Loading learning providers into search...");
-            var starterSearchDocuments = learningProviders.Select(MapEntityToSearchDocument).ToArray();
-            await _searchIndex.AddOrUpdateBatchAsync(starterSearchDocuments, cancellationToken);
-            _logger.Info($"Loaded {starterSearchDocuments.Length} learning providers into search");
+            learningProviders = learningProviders.Where(lp => lp.Links == null || lp.Links.Length == 0).ToArray();
+            _logger.Info($"Filtered learning providers down to {learningProviders.Length} that have no links");
+
+            if (options.InitializeSearchIndexWithAllEntities)
+            {
+                _logger.Info("Loading learning providers into search...");
+                var starterSearchDocuments = learningProviders.Select(MapEntityToSearchDocument).ToArray();
+                await _searchIndex.AddOrUpdateBatchAsync(starterSearchDocuments, cancellationToken);
+                _logger.Info($"Loaded {starterSearchDocuments.Length} learning providers into search");
+            }
 
             await Match(learningProviders, cancellationToken);
-
-            var duration = DateTime.Now - startTime;
-            _logger.Info($"Completed in {duration:c}");
         }
 
         static void Init(CommandLineOptions options)
@@ -71,15 +73,6 @@ namespace BulkMatch
                 AzureCognitiveSearchKey = options.AcsAdminKey,
                 IndexName = options.AcsIndexName,
             }, _logger);
-
-            // _searchIndex = new CachedSearchIndex(
-            //     new AcsSearchIndex(new SearchConfiguration
-            //     {
-            //         AzureCognitiveSearchServiceName = options.AcsInstanceName,
-            //         AzureCognitiveSearchKey = options.AcsAdminKey,
-            //         IndexName = options.AcsIndexName,
-            //     }, _logger),
-            //     _logger);
 
             var entityLinker = new EntityLinker(_entityRepository, linkRepository, _searchIndex, _logger);
 
@@ -187,6 +180,7 @@ namespace BulkMatch
             Parser.Default.ParseArguments<CommandLineOptions>(args).WithParsed((parsed) => options = parsed);
             if (options != null)
             {
+                var startTime = DateTime.Now;
                 try
                 {
                     Run(options).Wait();
@@ -195,6 +189,9 @@ namespace BulkMatch
                 {
                     _logger.Error(ex);
                 }
+
+                var duration = DateTime.Now - startTime;
+                _logger.Info($"Completed in {duration:c}");
 
                 _logger.Info("Done. Press any key to exit...");
                 Console.ReadKey();

@@ -12,6 +12,9 @@ namespace SeedFromLearningProviderFile
 
         [Option('l', "links-table-name", Required = false, Default = "links", HelpText = "Links table name")]
         public string LinksTableName { get; set; }
+        
+        [Option('i', "init-index", Default = false, HelpText = "Whether to initialize search index with all entities")]
+        public bool InitializeSearchIndexWithAllEntities { get; set; }
 
         [Option('n', "acs-instance-name", Required = true, HelpText = "Azure Cognitive Search instance name")]
         public string AcsInstanceName { get; set; }
