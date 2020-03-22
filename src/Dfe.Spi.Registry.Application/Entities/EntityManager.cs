@@ -129,13 +129,29 @@ namespace Dfe.Spi.Registry.Application.Entities
 
         public async Task SyncEntityAsync(Entity entity, CancellationToken cancellationToken)
         {
-            await _entityRepository.StoreAsync(entity, cancellationToken);
+            var entityToStore = entity;
+            var existing = await _entityRepository.GetEntityAsync(entity.Type,
+                entity.SourceSystemName, entity.SourceSystemId, cancellationToken);
+
+            if (existing != null)
+            {
+                existing.Data = entity.Data;
+                entityToStore = existing;
+            }
+            
+            await _entityRepository.StoreAsync(entityToStore, cancellationToken);
+            
+            if (entityToStore.Links == null || !entityToStore.Links.Any(l => l.LinkType == LinkTypes.Synonym))
+            {
+                var document = entityToStore.ToSearchDocument();
+                await _searchIndex.AddOrUpdateAsync(document, cancellationToken);
+            }
 
             await _matchingQueue.EnqueueAsync(new EntityForMatching
             {
-                Type = entity.Type,
-                SourceSystemName = entity.SourceSystemName,
-                SourceSystemId = entity.SourceSystemId,
+                Type = entityToStore.Type,
+                SourceSystemName = entityToStore.SourceSystemName,
+                SourceSystemId = entityToStore.SourceSystemId,
             }, cancellationToken);
         }
 

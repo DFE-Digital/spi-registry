@@ -40,7 +40,7 @@ namespace BulkMatch
             if (options.InitializeSearchIndexWithAllEntities)
             {
                 _logger.Info("Loading learning providers into search...");
-                var starterSearchDocuments = learningProviders.Select(MapEntityToSearchDocument).ToArray();
+                var starterSearchDocuments = learningProviders.Select(e => e.ToSearchDocument()).ToArray();
                 await _searchIndex.AddOrUpdateBatchAsync(starterSearchDocuments, cancellationToken);
                 _logger.Info($"Loaded {starterSearchDocuments.Length} learning providers into search");
             }
@@ -94,7 +94,7 @@ namespace BulkMatch
         static async Task Match(Entity[] learningProviders, CancellationToken cancellationToken)
         {
             var tasks = new Task[4];
-            var batchSize = (int)Math.Ceiling(learningProviders.Length / (float)tasks.Length);
+            var batchSize = (int) Math.Ceiling(learningProviders.Length / (float) tasks.Length);
             for (var i = 0; i < tasks.Length; i++)
             {
                 var taskBatch = learningProviders.Skip(i * batchSize).Take(batchSize).ToArray();
@@ -103,6 +103,7 @@ namespace BulkMatch
 
             await Task.WhenAll(tasks);
         }
+
         static async Task MatchBatch(int taskId, Entity[] batch, CancellationToken cancellationToken)
         {
             for (var i = 0; i < batch.Length; i++)
@@ -110,7 +111,7 @@ namespace BulkMatch
                 var learningProvider = batch[i];
                 _logger.Info(
                     $"task{taskId}: Matching {i} of {batch.Length}: {learningProvider.SourceSystemName}.{learningProvider.SourceSystemId}");
-            
+
                 await _matchManager.UpdateLinksAsync(
                     new EntityForMatching
                     {
@@ -120,55 +121,6 @@ namespace BulkMatch
                     },
                     cancellationToken);
             }
-        }
-        
-        
-        static SearchDocument MapEntityToSearchDocument(Entity entity)
-        {
-            return new SearchDocument
-            {
-                Id = Guid.NewGuid().ToString(),
-                EntityType = entity.Type,
-                ReferencePointer = $"entity:{entity.Type}:{entity.SourceSystemName}:{entity.SourceSystemId}",
-                SortableEntityName = entity.Data.GetValue(DataAttributeNames.Name)?.ToLower(),
-                Name = ValueToArray(entity.Data.GetValue(DataAttributeNames.Name)),
-                Type = ValueToArray(entity.Data.GetValue(DataAttributeNames.Type)),
-                SubType = ValueToArray(entity.Data.GetValue(DataAttributeNames.SubType)),
-                OpenDate = ValueToArray(entity.Data.GetValueAsDateTime(DataAttributeNames.OpenDate)),
-                CloseDate = ValueToArray(entity.Data.GetValueAsDateTime(DataAttributeNames.CloseDate)),
-                Urn = ValueToArray(entity.Data.GetValueAsLong(DataAttributeNames.Urn)),
-                Ukprn = ValueToArray(entity.Data.GetValueAsLong(DataAttributeNames.Ukprn)),
-                Uprn = ValueToArray(entity.Data.GetValue(DataAttributeNames.Uprn)),
-                CompaniesHouseNumber = ValueToArray(entity.Data.GetValue(DataAttributeNames.CompaniesHouseNumber)),
-                CharitiesCommissionNumber =
-                    ValueToArray(entity.Data.GetValue(DataAttributeNames.CharitiesCommissionNumber)),
-                AcademyTrustCode = ValueToArray(entity.Data.GetValue(DataAttributeNames.AcademyTrustCode)),
-                DfeNumber = ValueToArray(entity.Data.GetValue(DataAttributeNames.DfeNumber)),
-                LocalAuthorityCode = ValueToArray(entity.Data.GetValue(DataAttributeNames.LocalAuthorityCode)),
-                ManagementGroupType = ValueToArray(entity.Data.GetValue(DataAttributeNames.ManagementGroupType)),
-                ManagementGroupId = ValueToArray(entity.Data.GetValue(DataAttributeNames.ManagementGroupId)),
-            };
-        }
-
-        static string[] ValueToArray(string value)
-        {
-            return string.IsNullOrEmpty(value)
-                ? new string[0]
-                : new[] {value};
-        }
-
-        static DateTime[] ValueToArray(DateTime? value)
-        {
-            return !value.HasValue
-                ? new DateTime[0]
-                : new[] {value.Value};
-        }
-
-        static long[] ValueToArray(long? value)
-        {
-            return !value.HasValue
-                ? new long[0]
-                : new[] {value.Value};
         }
 
 
