@@ -196,15 +196,30 @@ namespace Dfe.Spi.Registry.Application.Matching
 
         private async Task CreateLinkInSearchIndex(Link link, CancellationToken cancellationToken)
         {
+            var referencePointer = $"link:{LinkTypes.Synonym.ToLower()}:{link.Id}";
+            var documentId = Guid.NewGuid().ToString();
+
+            // Check if record for synonym already exists
+            var existingDocumentSearchResult = await _searchIndex.SearchUsingSingleCriteriaAsync(
+                "ReferencePointer", DataOperator.Equals, referencePointer,
+                link.LinkedEntities[0].EntityType,
+                cancellationToken);
+            var existingDocument = existingDocumentSearchResult.Results?.FirstOrDefault();
+            if (existingDocument != null)
+            {
+                documentId = existingDocument.Id;
+            }
+            
+            // Create / Update link in search index
             var linkedEntities = await Task.WhenAll(link.LinkedEntities.Select(le =>
                 _entityRepository.GetEntityAsync(le.EntityType, le.EntitySourceSystemName, le.EntitySourceSystemId,
                     cancellationToken)));
 
             var searchDocument = new SearchDocument
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = documentId,
                 EntityType = linkedEntities[0].Type,
-                ReferencePointer = $"link:{LinkTypes.Synonym.ToLower()}:{link.Id}",
+                ReferencePointer = referencePointer,
                 SortableEntityName = linkedEntities[0].Data.GetValue(DataAttributeNames.Name)?.ToLower(),
                 Name = GetUniqueNonNullStringDataAttributeValues(linkedEntities, DataAttributeNames.Name),
                 Type = GetUniqueNonNullStringDataAttributeValues(linkedEntities, DataAttributeNames.Type),
