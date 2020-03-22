@@ -65,7 +65,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Matching
             _entityRepositoryMock.Verify(r => r.GetEntityAsync(
                     entityForMatching.Type, entityForMatching.SourceSystemName, entityForMatching.SourceSystemId,
                     _cancellationToken),
-                Times.Exactly(2));
+                Times.Once);
         }
 
         [Test, AutoData]
