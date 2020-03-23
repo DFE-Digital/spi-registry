@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Release", "Release", "{288C
 ProjectSection(SolutionItems) = preProject
 	..\azure\template.json = ..\azure\template.json
 	..\eventing\SubscribeToEvent.ps1 = ..\eventing\SubscribeToEvent.ps1
+	..\azure\CreateSearchIndex.ps1 = ..\azure\CreateSearchIndex.ps1
+	..\azure\spi-registered-entities.schema.json = ..\azure\spi-registered-entities.schema.json
 EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Application", "Dfe.Spi.Registry.Application\Dfe.Spi.Registry.Application.csproj", "{60641876-C2DF-4A81-99B1-65E590C5E15E}"
