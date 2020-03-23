@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,7 +32,14 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
 
         public async Task StoreAsync(Entity entity, CancellationToken cancellationToken)
         {
-            await InsertOrReplaceAsync(entity, cancellationToken);
+            try
+            {
+                await InsertOrReplaceAsync(entity, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to store entity {entity}: {ex.Message}", ex);
+            }
         }
 
         private TableEntityKeyPair GetKeyPair(Entity model)
