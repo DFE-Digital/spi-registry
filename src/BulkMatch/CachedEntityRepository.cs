@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -10,13 +11,13 @@ namespace BulkMatch
     public class CachedEntityRepository : IEntityRepository
     {
         private readonly IEntityRepository _innerRepository;
-        private readonly Dictionary<string, Entity[]> _cache;
+        private readonly ConcurrentDictionary<string, Entity[]> _cache;
 
         public CachedEntityRepository(IEntityRepository innerRepository)
         {
             _innerRepository = innerRepository;
             
-            _cache = new Dictionary<string, Entity[]>();
+            _cache = new ConcurrentDictionary<string, Entity[]>();
         }
         
         public async Task<Entity> GetEntityAsync(string type, string sourceSystemName, string sourceSystemId, CancellationToken cancellationToken)
@@ -41,13 +42,14 @@ namespace BulkMatch
 
         private async Task<Entity[]> LoadAndGetEntitiesOfTypeAsync(string type, CancellationToken cancellationToken)
         {
-            if (_cache.ContainsKey(type))
+            Entity[] entities;
+            if (_cache.TryGetValue(type, out entities))
             {
-                return _cache[type];
+                return entities;
             }
-
-            var entities = await _innerRepository.GetEntitiesOfTypeAsync(type, cancellationToken);
-            _cache.Add(type, entities);
+            
+            entities = await _innerRepository.GetEntitiesOfTypeAsync(type, cancellationToken);
+            _cache.TryAdd(type, entities);
             return entities;
         }
     }
