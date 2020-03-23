@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dfe.Spi.Common.Extensions;
 using Dfe.Spi.Common.Models;
 
 namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
@@ -104,11 +105,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
                         }
                         else if (IsDateType(field.DataType))
                         {
-                            DateTime dtm;
-                            if (!DateTime.TryParse(value, out dtm))
-                            {
-                                throw new Exception($"{value} is not a valid date/time value for {field.Name}");
-                            }
+                            var dtm = value.ToDateTime();
 
                             conditionValue = dtm.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
                         }
