@@ -30,9 +30,11 @@ namespace BulkMatch
             Init(options);
 
             _logger.Info("Loading learning providers...");
+            var loadStartTime = DateTime.Now;
             var learningProviders =
                 await _entityRepository.GetEntitiesOfTypeAsync(TypeNames.LearningProvider, cancellationToken);
-            _logger.Info($"Loaded {learningProviders.Length} learning providers for matching");
+            var loadDuration = DateTime.Now - loadStartTime;
+            _logger.Info($"Loaded {learningProviders.Length} learning providers for matching in {loadDuration:c}");
 
             learningProviders = learningProviders.Where(lp => lp.Links == null || lp.Links.Length == 0).ToArray();
             _logger.Info($"Filtered learning providers down to {learningProviders.Length} that have no links");
@@ -51,12 +53,12 @@ namespace BulkMatch
         static void Init(CommandLineOptions options)
         {
             _entityRepository = new CachedEntityRepository(
-                new TableEntityRepository(
+                new CompositeTableEntityRepository(
                     new EntitiesConfiguration
                     {
                         TableStorageConnectionString = options.StorageConnectionString,
                         TableStorageTableName = options.EntitiesTableName,
-                    }));
+                    }, _logger));
 
             var linkRepository = new TableLinkRepository(
                 new LinksConfiguration

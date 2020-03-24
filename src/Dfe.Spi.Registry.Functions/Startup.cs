@@ -108,7 +108,7 @@ namespace Dfe.Spi.Registry.Functions
         private void AddRepositories(IServiceCollection services)
         {
             services
-                .AddSingleton<IEntityRepository, TableEntityRepository>()
+                .AddSingleton<IEntityRepository, CompositeTableEntityRepository>()
                 .AddSingleton<ILinkRepository, TableLinkRepository>()
                 .AddSingleton<IMatchingProfileRepository, WellDefinedMatchingProfileRepository>();
         }

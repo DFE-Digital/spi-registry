@@ -33,11 +33,11 @@ namespace SeedFromLearningProviderFile
 
         static void Init(CommandLineOptions options)
         {
-            var entityRepository = new TableEntityRepository(new EntitiesConfiguration
+            var entityRepository = new CompositeTableEntityRepository(new EntitiesConfiguration
             {
                 TableStorageConnectionString = options.StorageConnectionString,
                 TableStorageTableName = options.EntitiesTableName,
-            });
+            }, _logger);
 
             var linkRepository = new TableLinkRepository(new LinksConfiguration
             {
