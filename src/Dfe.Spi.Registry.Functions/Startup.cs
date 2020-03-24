@@ -81,7 +81,7 @@ namespace Dfe.Spi.Registry.Functions
             services.AddLogging();
             services.AddScoped(typeof(ILogger<>), typeof(Logger<>));
             services.AddScoped<ILogger>(provider =>
-                provider.GetService<ILoggerFactory>().CreateLogger(LogCategories.CreateFunctionUserCategory("Common")));
+                provider.GetService<ILoggerFactory>().CreateLogger(LogCategories.CreateFunctionUserCategory("Registry")));
             
             services.AddScoped<IHttpSpiExecutionContextManager, HttpSpiExecutionContextManager>();
             services.AddScoped<ISpiExecutionContextManager>((provider) =>

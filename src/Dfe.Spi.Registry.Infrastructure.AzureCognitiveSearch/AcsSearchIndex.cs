@@ -63,7 +63,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
             CancellationToken cancellationToken)
         {
             var search = BuildSearch(request, entityType);
-            _logger.Info(
+            _logger.Debug(
                 $"Search ACS with query {search.Query} and filter {search.Filter} for items {request.Skip} to {request.Skip + request.Take}...");
 
             var results = await _client.Documents.SearchAsync<AcsSearchDocument>(

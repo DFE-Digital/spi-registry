@@ -59,12 +59,12 @@ namespace Dfe.Spi.Registry.Application.Entities
             var synonymLinkPointer = sourceEntity?.Links?.SingleOrDefault(l => l.LinkType == LinkTypes.Synonym);
             if (synonymLinkPointer == null)
             {
-                _logger.Info(
+                _logger.Debug(
                     $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} does not point to any synonyms");
                 return null;
             }
 
-            _logger.Info(
+            _logger.Debug(
                 $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} points to synonym {synonymLinkPointer.LinkId}");
 
             var link = await _linkRepository.GetLinkAsync(synonymLinkPointer.LinkType, synonymLinkPointer.LinkId,
@@ -95,12 +95,12 @@ namespace Dfe.Spi.Registry.Application.Entities
             var linkPointers = sourceEntity?.Links?.Where(l => l.LinkType != LinkTypes.Synonym)?.ToArray();
             if (linkPointers == null)
             {
-                _logger.Info(
+                _logger.Debug(
                     $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} does not point to any links");
                 return null;
             }
 
-            _logger.Info(
+            _logger.Debug(
                 $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} points to {linkPointers.Length} links");
 
             var entityPointers = new List<LinkedEntityPointer>();
