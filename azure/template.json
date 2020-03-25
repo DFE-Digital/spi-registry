@@ -179,6 +179,18 @@
             {
               "name": "SPI_Queue__StorageQueueConnectionString",
               "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "SPI_Search__AzureCognitiveSearchServiceName",
+              "value": "[variables('searchServiceName')]"
+            },
+            {
+              "name": "SPI_Search__AzureCognitiveSearchKey",
+              "value": "[listAdminKeys(variables('searchServiceId'), '2015-08-19').PrimaryKey]"
+            },
+            {
+              "name": "SPI_Search__IndexName",
+              "value": "spi-registered-entities"
             }
           ],
           "ipSecurityRestrictions": [
