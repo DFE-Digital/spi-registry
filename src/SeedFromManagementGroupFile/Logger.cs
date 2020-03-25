@@ -1,7 +1,7 @@
 using System;
 using Dfe.Spi.Common.Logging.Definitions;
 
-namespace PopulateRegistryFromGiasEstablishments
+namespace SeedFromManagementGroupFile
 {
     class Logger : ILoggerWrapper
     {

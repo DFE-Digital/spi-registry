@@ -8,6 +8,7 @@ using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Application.LearningProviders;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Queuing;
+using Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Links;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Queuing;
@@ -32,11 +33,11 @@ namespace SeedFromLearningProviderFile
 
         static void Init(CommandLineOptions options)
         {
-            var entityRepository = new TableEntityRepository(new EntitiesConfiguration
+            var entityRepository = new CompositeTableEntityRepository(new EntitiesConfiguration
             {
                 TableStorageConnectionString = options.StorageConnectionString,
                 TableStorageTableName = options.EntitiesTableName,
-            });
+            }, _logger);
 
             var linkRepository = new TableLinkRepository(new LinksConfiguration
             {
@@ -51,11 +52,19 @@ namespace SeedFromLearningProviderFile
                     {
                         StorageQueueConnectionString = options.StorageConnectionString,
                     });
+
+            var searchIndex = new AcsSearchIndex(new SearchConfiguration
+            {
+                AzureCognitiveSearchServiceName = options.AcsInstanceName,
+                AzureCognitiveSearchKey = options.AcsAdminKey,
+                IndexName = options.AcsIndexName,
+            }, _logger);
             
             var entityManager = new EntityManager(
                 entityRepository,
                 linkRepository,
                 matchingQueue,
+                searchIndex,
                 _logger);
             
             _learningProviderManager = new LearningProviderManager(

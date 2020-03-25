@@ -41,6 +41,8 @@
   },
   "variables": {
     "namePrefix": "[concat(parameters('serviceIdentifier'), parameters('environment'), parameters('environmentInstance'))]",
+    "searchServiceName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-acs-01')]",
+    "searchServiceId": "[concat(resourceGroup().id,'/providers/','Microsoft.Search/searchServices/', variables('searchServiceName'))]",
     "storageAccountName": "[toLower(concat(variables('namePrefix'), parameters('appName')))]",
     "storageAccountId": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
     "servicePlanName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-asp-01')]",
@@ -50,6 +52,20 @@
     "sharedResourceGroupName": "[concat(variables('namePrefix'), '-shared')]"
   },
   "resources": [
+    {
+      "type": "Microsoft.Search/searchServices",
+      "apiVersion": "2015-08-19",
+      "name": "[variables('searchServiceName')]",
+      "location": "West Europe",
+      "sku": {
+        "name": "basic"
+      },
+      "properties": {
+        "replicaCount": 1,
+        "partitionCount": 1,
+        "hostingMode": "Default"
+      }
+    },
     {
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('storageAccountName')]",
@@ -185,6 +201,10 @@
     "functionAppKey": {
       "value": "[listkeys(concat(variables('functionAppId'), '/host/default/'),'2016-08-01').functionKeys.default]",
       "type": "string"
+    },
+    "searchKey": {
+      "type": "string",
+      "value": "[listAdminKeys(variables('searchServiceId'), '2015-08-19').PrimaryKey]"
     }
   }
 }

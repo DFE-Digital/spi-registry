@@ -7,6 +7,7 @@ using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
 using Dfe.Spi.Registry.Domain.Queuing;
+using Dfe.Spi.Registry.Domain.Search;
 using Moq;
 using NUnit.Framework;
 
@@ -17,6 +18,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
         private Mock<IEntityRepository> _entityRepositoryMock;
         private Mock<ILinkRepository> _linkRepositoryMock;
         private Mock<IMatchingQueue> _matchingQueueMock;
+        private Mock<ISearchIndex> _searchIndexMock;
         private Mock<ILoggerWrapper> _loggerWrapperMock;
         private EntityManager _manager;
         private CancellationToken _cancellationToken;
@@ -37,6 +39,8 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                 });
             
             _matchingQueueMock = new Mock<IMatchingQueue>();
+            
+            _searchIndexMock = new Mock<ISearchIndex>();
 
             _loggerWrapperMock = new Mock<ILoggerWrapper>();
 
@@ -44,6 +48,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
                 _entityRepositoryMock.Object,
                 _linkRepositoryMock.Object,
                 _matchingQueueMock.Object,
+                _searchIndexMock.Object,
                 _loggerWrapperMock.Object);
 
             _cancellationToken = new CancellationToken();

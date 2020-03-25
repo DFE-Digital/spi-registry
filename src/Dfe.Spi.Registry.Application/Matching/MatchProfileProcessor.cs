@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
+using Dfe.Spi.Common.Models;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
 using Dfe.Spi.Registry.Domain.Matching;
+using Dfe.Spi.Registry.Domain.Search;
 
 namespace Dfe.Spi.Registry.Application.Matching
 {
@@ -18,15 +21,21 @@ namespace Dfe.Spi.Registry.Application.Matching
     {
         private readonly IEntityRepository _entityRepository;
         private readonly ILinkRepository _linkRepository;
+        private readonly ISearchIndex _searchIndex;
+        private readonly IEntityLinker _entityLinker;
         private readonly ILoggerWrapper _logger;
 
         public MatchProfileProcessor(
             IEntityRepository entityRepository,
             ILinkRepository linkRepository,
+            ISearchIndex searchIndex,
+            IEntityLinker entityLinker,
             ILoggerWrapper logger)
         {
             _entityRepository = entityRepository;
             _linkRepository = linkRepository;
+            _searchIndex = searchIndex;
+            _entityLinker = entityLinker;
             _logger = logger;
         }
 
@@ -35,61 +44,12 @@ namespace Dfe.Spi.Registry.Application.Matching
             _logger.Info($"Starting to process {source} using profile {profile.Name}");
             profile = EnsureProfileSourceMatchesSourceEntityType(source.Type, profile);
 
-            var candidates = await _entityRepository.GetEntitiesOfTypeAsync(profile.CandidateType, cancellationToken);
-            _logger.Info($"Found {candidates.Length} candidates for {source} when processing for profile {profile.Name}");
-
-            foreach (var candidate in candidates)
+            var matches = await FindMatches(source, profile, cancellationToken);
+            foreach (var match in matches)
             {
-                var matchResult = AssessMatch(source, candidate, profile);
-                _logger.Debug($"{candidate} match result for {source} using profile is {matchResult.IsMatch}");
-                if (matchResult.IsMatch)
+                if (!AreTheSameEntity(source, match.Candidate))
                 {
-                    Link link;
-                    var linkReason =
-                        $"Matched using profile {profile.Name} against ruleset {matchResult.MatchingRuleset}";
-
-                    var existingPointer = source.Links?.SingleOrDefault(lp => lp.LinkType == profile.LinkType);
-                    if (existingPointer != null)
-                    {
-                        _logger.Info($"Source already has link of type {profile.LinkType}, will see if link needs updating using profile {profile.Name}");
-                        link = await _linkRepository.GetLinkAsync(existingPointer.LinkType, existingPointer.LinkId,
-                            cancellationToken);
-                        if (link.LinkedEntities.Any(l => l.EntityType == candidate.Type &&
-                                                         l.EntitySourceSystemName == candidate.SourceSystemName &&
-                                                         l.EntitySourceSystemId == candidate.SourceSystemId))
-                        {
-                            _logger.Info($"{source} and {candidate} are already linked with type {profile.LinkType} so no new links using profile {profile.Name}");
-                            continue;
-                        }
-
-                        _logger.Info($"Updating link {link.Id} to add {candidate}, for link to {source} using profile {profile.Name}");
-                        link.LinkedEntities = link.LinkedEntities.Concat(new[]
-                        {
-                            GetEntityLinkFromEntity(candidate, linkReason),
-                        }).ToArray();
-                    }
-                    else
-                    {
-                        _logger.Info($"{source} and {candidate} match resulting in new link of type {profile.LinkType} using profile {profile.Name}");
-                        link = new Link
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            Type = profile.LinkType,
-                            LinkedEntities = new[]
-                            {
-                                GetEntityLinkFromEntity(source, linkReason),
-                                GetEntityLinkFromEntity(candidate, linkReason),
-                            }
-                        };
-                    }
-
-                    _logger.Debug($"Updating link {link.Id} for {source} and {candidate} using profile {profile.Name}");
-                    await _linkRepository.StoreAsync(link, cancellationToken);
-
-                    _logger.Debug($"Updating source entity {source} with link {link.Id} for {candidate} using profile {profile.Name}");
-                    await AppendLinkPointerAsync(source, link, cancellationToken);
-                    _logger.Debug($"Updating candidate entity {candidate} with link {link.Id} for {source} using profile {profile.Name}");
-                    await AppendLinkPointerAsync(candidate, link, cancellationToken);
+                    await _entityLinker.LinkEntitiesAsync(source, match.Candidate, profile, match.MatchingRuleset, cancellationToken);
                 }
             }
         }
@@ -122,54 +82,84 @@ namespace Dfe.Spi.Registry.Application.Matching
             };
         }
 
-        private static MatchResult AssessMatch(Entity source, Entity candidate, MatchingProfile profile)
+        private async Task<CandidateMatch[]> FindMatches(Entity source, MatchingProfile profile,
+            CancellationToken cancellationToken)
         {
-            // Stop trying to match against self
-            if (AreTheSameEntity(source, candidate))
-            {
-                return new MatchResult
-                {
-                    IsMatch = false,
-                };
-            }
+            var matches = new List<CandidateMatch>();
 
-            // OK, is it a match?
             foreach (var ruleset in profile.Rules)
             {
-                var isMatch = true;
-
-                foreach (var criteria in ruleset.Criteria)
+                var filter = ruleset.Criteria.Select(criteria =>
+                    new DataFilter
+                    {
+                        Field = criteria.CandidateAttribute,
+                        Operator = DataOperator.Equals,
+                        Value = source.Data.ContainsKey(criteria.SourceAttribute)
+                            ? source.Data[criteria.SourceAttribute]
+                            : null,
+                    }).ToArray();
+                if (filter.Any(kvp => string.IsNullOrEmpty(kvp.Value)))
                 {
-                    if (source.Data == null || !source.Data.ContainsKey(criteria.SourceAttribute) ||
-                        candidate.Data == null || !candidate.Data.ContainsKey(criteria.CandidateAttribute))
-                    {
-                        isMatch = false;
-                        break;
-                    }
-
-                    if (source.Data[criteria.SourceAttribute] != candidate.Data[criteria.CandidateAttribute] ||
-                        string.IsNullOrEmpty(source.Data[criteria.SourceAttribute]) ||
-                        string.IsNullOrEmpty(candidate.Data[criteria.CandidateAttribute]))
-                    {
-                        isMatch = false;
-                        break;
-                    }
+                    // Cannot match if source does not have the value
+                    continue;
                 }
 
-                if (isMatch)
+                var candidateSearch = new SearchRequest
                 {
-                    return new MatchResult
+                    Groups = new[]
                     {
-                        IsMatch = true,
-                        MatchingRuleset = ruleset.Name,
-                    };
+                        new SearchGroup
+                        {
+                            Filter = filter,
+                            CombinationOperator = "and",
+                        },
+                    },
+                    CombinationOperator = "and",
+                    Take = 100,
+                };
+                var candidateSearchResults = await _searchIndex.SearchAsync(candidateSearch, profile.CandidateType, cancellationToken);
+                foreach (var searchDocument in candidateSearchResults.Results)
+                {
+                    var referenceParts = searchDocument.ReferencePointer.Split(':');
+                    if (referenceParts[0] == "entity")
+                    {
+                        await AddEntityToMatchesList(matches, referenceParts[1], referenceParts[2], referenceParts[3],
+                            ruleset.Name, cancellationToken);
+                    }
+                    else if (referenceParts[0] == "link")
+                    {
+                        var link = await _linkRepository.GetLinkAsync(referenceParts[1], referenceParts[2],
+                            cancellationToken);
+                        foreach (var linkedEntity in link.LinkedEntities)
+                        {
+                            await AddEntityToMatchesList(matches, linkedEntity.EntityType, linkedEntity.EntitySourceSystemName, linkedEntity.EntitySourceSystemId,
+                                ruleset.Name, cancellationToken);
+                        }
+                    }
                 }
             }
 
-            return new MatchResult
+            return matches.ToArray();
+        }
+
+        private async Task AddEntityToMatchesList(List<CandidateMatch> matches, string entityType, string entitySourceSystemName, string entitySourceSystemId, 
+            string rulesetName, CancellationToken cancellationToken)
+        {
+            if (matches.Any(m =>
+                m.Candidate.Type == entityType &&
+                m.Candidate.SourceSystemName == entitySourceSystemName &&
+                m.Candidate.SourceSystemId == entitySourceSystemId))
             {
-                IsMatch = false,
-            };
+                return;
+            }
+            
+            var entity = await _entityRepository.GetEntityAsync(entityType, entitySourceSystemName,
+                entitySourceSystemId, cancellationToken);
+            matches.Add(new CandidateMatch
+            {
+                Candidate = entity,
+                MatchingRuleset = rulesetName,
+            });
         }
 
         private static bool AreTheSameEntity(Entity source, Entity candidate)
@@ -179,47 +169,9 @@ namespace Dfe.Spi.Registry.Application.Matching
                    source.SourceSystemId == candidate.SourceSystemId;
         }
 
-        private static EntityLink GetEntityLinkFromEntity(Entity entity, string reason)
+        private class CandidateMatch
         {
-            return new EntityLink
-            {
-                EntityType = entity.Type,
-                EntitySourceSystemName = entity.SourceSystemName,
-                EntitySourceSystemId = entity.SourceSystemId,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = "Matcher",
-                CreatedReason = reason,
-            };
-        }
-
-        private async Task AppendLinkPointerAsync(Entity entity, Link link, CancellationToken cancellationToken)
-        {
-            if (entity.Links != null && entity.Links.Any(lp => lp.LinkId == link.Id))
-            {
-                return;
-            }
-
-            var linkPointer = new LinkPointer
-            {
-                LinkId = link.Id,
-                LinkType = link.Type,
-            };
-
-            if (entity.Links != null)
-            {
-                entity.Links = entity.Links.Concat(new[] {linkPointer}).ToArray();
-            }
-            else
-            {
-                entity.Links = new[] {linkPointer};
-            }
-
-            await _entityRepository.StoreAsync(entity, cancellationToken);
-        }
-
-        private class MatchResult
-        {
-            public bool IsMatch { get; set; }
+            public Entity Candidate { get; set; }
             public string MatchingRuleset { get; set; }
         }
     }

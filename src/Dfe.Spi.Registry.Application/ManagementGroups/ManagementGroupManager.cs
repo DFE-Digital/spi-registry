@@ -41,7 +41,8 @@ namespace Dfe.Spi.Registry.Application.ManagementGroups
                 SourceSystemId = managementGroup.Code,
                 Data = new Dictionary<string, string>
                 {
-                    { "code", managementGroup.Code },
+                    { DataAttributeNames.ManagementGroupId, managementGroup.Code },
+                    { DataAttributeNames.ManagementGroupType, managementGroup.Type },
                 },
             };
             

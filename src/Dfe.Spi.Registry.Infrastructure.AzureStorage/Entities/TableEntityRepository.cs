@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,9 +9,18 @@ using Newtonsoft.Json;
 
 namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
 {
-    public class TableEntityRepository : TableRepository<EntityEntity, Entity>, IEntityRepository
+    internal interface ITableEntityRepository
     {
-        public TableEntityRepository(EntitiesConfiguration configuration)
+        Task<Entity> GetEntityAsync(string type, string sourceSystemName, string sourceSystemId,
+            CancellationToken cancellationToken);
+
+        Task<Entity[]> GetEntitiesOfTypeAsync(string type, CancellationToken cancellationToken);
+        Task StoreAsync(Entity entity, CancellationToken cancellationToken);
+    }
+
+    internal class TableEntityRepository : TableRepository<EntityEntity, Entity>, ITableEntityRepository
+    {
+        internal TableEntityRepository(EntitiesConfiguration configuration)
             : base(configuration.TableStorageConnectionString, configuration.TableStorageTableName)
         {
         }
@@ -31,7 +41,14 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
 
         public async Task StoreAsync(Entity entity, CancellationToken cancellationToken)
         {
-            await InsertOrReplaceAsync(entity, cancellationToken);
+            try
+            {
+                await InsertOrReplaceAsync(entity, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to store entity {entity}: {ex.Message}", ex);
+            }
         }
 
         private TableEntityKeyPair GetKeyPair(Entity model)
@@ -60,9 +77,6 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
                 Data = !string.IsNullOrEmpty(entity.Data)
                     ? JsonConvert.DeserializeObject<Dictionary<string, string>>(entity.Data)
                     : null,
-                Links = !string.IsNullOrEmpty(entity.Links)
-                    ? JsonConvert.DeserializeObject<LinkPointer[]>(entity.Links)
-                    : null,
             };
         }
 
@@ -77,17 +91,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
                 SourceSystemId = model.SourceSystemId,
                 Type = model.Type,
                 Data = model.Data != null ? JsonConvert.SerializeObject(model.Data) : null,
-                Links = model.Links != null ? JsonConvert.SerializeObject(model.Links) : null,
             };
         }
-    }
-
-    public class EntityEntity : TableEntity
-    {
-        public string SourceSystemName { get; set; }
-        public string SourceSystemId { get; set; }
-        public string Type { get; set; }
-        public string Data { get; set; }
-        public string Links { get; set; }
     }
 }

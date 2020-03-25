@@ -19,6 +19,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
 
         protected CloudTable Table { get; private set; }
 
+        
         protected async Task<TModel> GetSingleEntityAsync(string partitionKey, string rowKey,
             CancellationToken cancellationToken)
         {
@@ -33,6 +34,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
 
             return ConvertEntityToModel((TEntity) operationResult.Result);
         }
+        
         protected async Task<TModel[]> GetEntitiesInPartition(string partitionKey, CancellationToken cancellationToken)
         {
             await Table.CreateIfNotExistsAsync(cancellationToken);
@@ -44,6 +46,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
             return models;
         }
 
+        
         protected async Task InsertOrReplaceAsync(TModel model, CancellationToken cancellationToken)
         {
             await Table.CreateIfNotExistsAsync(cancellationToken);
@@ -85,6 +88,36 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
             } while (position < models.Length);
         }
 
+
+        protected async Task DeleteBatchAsync(TModel[] models, CancellationToken cancellationToken)
+        {
+            await Table.CreateIfNotExistsAsync(cancellationToken);
+
+            const int batchSize = 100;
+            var position = 0;
+            do
+            {
+                var segment = models.Skip(position).Take(batchSize);
+                var batch = new TableBatchOperation();
+
+                foreach (var model in segment)
+                {
+                    var entity = ConvertModelToEntity(model);
+                    if (string.IsNullOrEmpty(entity.ETag))
+                    {
+                        entity.ETag = "*";
+                    }
+                    batch.Delete(entity);
+                }
+            
+                await Table.ExecuteBatchAsync(batch, cancellationToken);
+
+                position += batchSize;
+            } while (position < models.Length);
+        }
+        
+
+        
         protected abstract TModel ConvertEntityToModel(TEntity entity);
         protected abstract TEntity ConvertModelToEntity(TModel model);
     }

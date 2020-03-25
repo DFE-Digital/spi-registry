@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CommandLineParser" Version="2.6.0" />
+        <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.1" />
+        <PackageReference Include="Dfe.Spi.Common.WellKnownIdentifiers" Version="1.0.2" />
+        <PackageReference Include="Microsoft.Spatial" Version="7.5.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Dfe.Spi.Registry.Application\Dfe.Spi.Registry.Application.csproj" />
+        <ProjectReference Include="..\Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj" />
+        <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch\Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch.csproj" />
+        <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.AzureStorage\Dfe.Spi.Registry.Infrastructure.AzureStorage.csproj" />
+    </ItemGroup>
+
+</Project>

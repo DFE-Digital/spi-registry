@@ -13,7 +13,9 @@ using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
 using Dfe.Spi.Registry.Domain.Matching;
 using Dfe.Spi.Registry.Domain.Queuing;
+using Dfe.Spi.Registry.Domain.Search;
 using Dfe.Spi.Registry.Functions;
+using Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Links;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Queuing;
@@ -48,6 +50,7 @@ namespace Dfe.Spi.Registry.Functions
             AddManagers(services);
             AddRepositories(services);
             AddQueues(services);
+            AddSearch(services);
         }
 
         private IConfigurationRoot BuildConfiguration()
@@ -70,14 +73,14 @@ namespace Dfe.Spi.Registry.Functions
             services.AddSingleton(_configuration.Entities);
             services.AddSingleton(_configuration.Links);
             services.AddSingleton(_configuration.Queue);
+            services.AddSingleton(_configuration.Search);
         }
 
         private void AddLogging(IServiceCollection services)
         {
             services.AddLogging();
-            services.AddScoped(typeof(ILogger<>), typeof(Logger<>));
             services.AddScoped<ILogger>(provider =>
-                provider.GetService<ILoggerFactory>().CreateLogger(LogCategories.CreateFunctionUserCategory("Common")));
+                provider.GetService<ILoggerFactory>().CreateLogger(LogCategories.CreateFunctionUserCategory("Registry")));
             
             services.AddScoped<IHttpSpiExecutionContextManager, HttpSpiExecutionContextManager>();
             services.AddScoped<ISpiExecutionContextManager>((provider) =>
@@ -95,6 +98,8 @@ namespace Dfe.Spi.Registry.Functions
             services.AddScoped<IEntityManager, EntityManager>();
             services.AddScoped<ILearningProviderManager, LearningProviderManager>();
             services.AddScoped<IManagementGroupManager, ManagementGroupManager>();
+            
+            services.AddScoped<IEntityLinker, EntityLinker>();
             services.AddScoped<IMatchProfileProcessor, MatchProfileProcessor>();
             services.AddScoped<IMatchManager, MatchManager>();
         }
@@ -102,14 +107,19 @@ namespace Dfe.Spi.Registry.Functions
         private void AddRepositories(IServiceCollection services)
         {
             services
-                .AddSingleton<IEntityRepository, TableEntityRepository>()
-                .AddSingleton<ILinkRepository, TableLinkRepository>()
-                .AddSingleton<IMatchingProfileRepository, WellDefinedMatchingProfileRepository>();
+                .AddScoped<IEntityRepository, CompositeTableEntityRepository>()
+                .AddScoped<ILinkRepository, TableLinkRepository>()
+                .AddScoped<IMatchingProfileRepository, WellDefinedMatchingProfileRepository>();
         }
 
         private void AddQueues(IServiceCollection services)
         {
             services.AddScoped<IMatchingQueue, StorageMatchingQueue>();
+        }
+
+        private void AddSearch(IServiceCollection services)
+        {
+            services.AddScoped<ISearchIndex, AcsSearchIndex>();
         }
     }
 }
