@@ -35,7 +35,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
         public async Task<LinkPointer[]> GetEntityLinksAsync(string type, string sourceSystemName,
             string sourceSystemId, CancellationToken cancellationToken)
         {
-            var keys = GetKeyPair(type, sourceSystemName, sourceSystemName,
+            var keys = GetKeyPair(type, sourceSystemName, sourceSystemId,
                 string.Empty, string.Empty);
             return await GetEntitiesInPartition(keys.PartitionKey, cancellationToken);
         }
@@ -59,14 +59,14 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Entities
                     if (keyMatch.Success)
                     {
                         _logger.Debug($"Found matching link key {entity.PartitionKey}");
-                        if (!entity.Properties.ContainsKey("EntityType"))
+                        if (!entity.Properties.ContainsKey("Type"))
                         {
-                            throw new Exception($"Link result {entity.PartitionKey} / {entity.RowKey} does not contain EntityType property");
+                            throw new Exception($"Link result {entity.PartitionKey} / {entity.RowKey} does not contain Type property");
                         }
                         
                         allEntities.Add(new EntityLinkPointer
                         {
-                            EntityType = entity.Properties["EntityType"].StringValue,
+                            EntityType = entity.Properties["Type"].StringValue,
                             SourceSystemName = entity.Properties["SourceSystemName"].StringValue,
                             SourceSystemId = entity.Properties["SourceSystemId"].StringValue,
                             LinkType = entity.Properties["LinkType"].StringValue,

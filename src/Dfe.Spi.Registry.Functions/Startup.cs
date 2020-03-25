@@ -79,7 +79,6 @@ namespace Dfe.Spi.Registry.Functions
         private void AddLogging(IServiceCollection services)
         {
             services.AddLogging();
-            services.AddScoped(typeof(ILogger<>), typeof(Logger<>));
             services.AddScoped<ILogger>(provider =>
                 provider.GetService<ILoggerFactory>().CreateLogger(LogCategories.CreateFunctionUserCategory("Registry")));
             
@@ -108,9 +107,9 @@ namespace Dfe.Spi.Registry.Functions
         private void AddRepositories(IServiceCollection services)
         {
             services
-                .AddSingleton<IEntityRepository, CompositeTableEntityRepository>()
-                .AddSingleton<ILinkRepository, TableLinkRepository>()
-                .AddSingleton<IMatchingProfileRepository, WellDefinedMatchingProfileRepository>();
+                .AddScoped<IEntityRepository, CompositeTableEntityRepository>()
+                .AddScoped<ILinkRepository, TableLinkRepository>()
+                .AddScoped<IMatchingProfileRepository, WellDefinedMatchingProfileRepository>();
         }
 
         private void AddQueues(IServiceCollection services)
