@@ -7,6 +7,57 @@
   },
   "host": "__function_app_host__",
   "paths": {
+    "/search/{entityType}": {
+      "post": {
+        "description": "Performs a search against given entity.",
+        "operationId": "search-entities",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entityType",
+            "type": "string",
+            "description": "The name of the entity.",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "Search Request",
+            "schema": {
+              "type": "object"
+            },
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "description": "Bearer token authentication.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-Internal-Request-Id",
+            "type": "string",
+            "description": "An internal request id. Should be a vaild guid.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-External-Request-Id",
+            "description": "An optional external request id. Used in logging.",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The search executed successfully, and results are included in the body.",
+            "schema": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
     "/learning-providers/{system}/{id}/synonyms": {
       "get": {
         "description": "Gets learning provider synonyms.",
