@@ -68,6 +68,8 @@ namespace Dfe.Spi.Registry.Functions.Search
             {
                 case "learning-providers":
                     return "learning-provider";
+                case "management-groups":
+                    return "management-group";
                 default:
                     return pluralEntityName;
             }
