@@ -5,6 +5,7 @@ namespace Dfe.Spi.Registry.Domain
         public const string Name = "name";
         public const string Type = "type";
         public const string SubType = "subType";
+        public const string Status = "status";
         public const string OpenDate = "openDate";
         public const string CloseDate = "closeDate";
         public const string Urn = "urn";

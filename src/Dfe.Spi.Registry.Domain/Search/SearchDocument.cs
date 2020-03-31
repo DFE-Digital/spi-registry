@@ -11,6 +11,7 @@ namespace Dfe.Spi.Registry.Domain.Search
         public virtual string[] Name { get; set; }
         public virtual string[] Type { get; set; }
         public virtual string[] SubType { get; set; }
+        public virtual string[] Status { get; set; }
         public virtual DateTime[] OpenDate { get; set; }
         public virtual DateTime[] CloseDate { get; set; }
         public virtual long[] Urn { get; set; }

@@ -46,7 +46,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
         {
             if (field.IsSearchable)
             {
-                AppendFilter($"search.ismatch('\"{value}\"', '{field.Name}')");
+                AppendFilter($"search.ismatch('\"{FormatStringValueForFilter(value)}\"', '{field.Name}')");
                 return;
             }
             
@@ -83,11 +83,11 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
 
                     if (field.IsArray)
                     {
-                        AppendFilter($"{field.Name}/any(x: search.in(x, '{conditionValue}', ','))");
+                        AppendFilter($"{field.Name}/any(x: search.in(x, '{FormatStringValueForFilter(conditionValue)}', ','))");
                     }
                     else
                     {
-                        AppendFilter($"search.in({field.Name}, '{conditionValue}', ',')");
+                        AppendFilter($"search.in({field.Name}, '{FormatStringValueForFilter(conditionValue)}', ',')");
                     }
                 }
                 else
@@ -111,7 +111,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
                         }
                         else
                         {
-                            conditionValue = $"'{value}'";
+                            conditionValue = $"'{FormatStringValueForFilter(value)}'";
                         }
                     }
 
@@ -152,9 +152,13 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
                 AppendFilter($"({group.Filter})");
             }
         }
-        
-        
 
+
+
+        private string FormatStringValueForFilter(string value)
+        {
+            return value.Replace("'", "''");
+        }
         private bool IsNumericType(Type type)
         {
             return type == typeof(int) ||

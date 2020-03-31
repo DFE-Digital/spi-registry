@@ -28,6 +28,9 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
         public override string[] SubType { get; set; }
         
         [IsFilterable]
+        public override string[] Status { get; set; }
+        
+        [IsFilterable]
         public override DateTime[] OpenDate { get; set; }
         
         [IsFilterable]
