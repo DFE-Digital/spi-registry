@@ -18,6 +18,7 @@ namespace Dfe.Spi.Registry.Application
                 Name = ValueToArray(entity.Data.GetValue(DataAttributeNames.Name)),
                 Type = ValueToArray(entity.Data.GetValue(DataAttributeNames.Type)),
                 SubType = ValueToArray(entity.Data.GetValue(DataAttributeNames.SubType)),
+                Status = ValueToArray(entity.Data.GetValue(DataAttributeNames.Status)),
                 OpenDate = ValueToArray(entity.Data.GetValueAsDateTime(DataAttributeNames.OpenDate)),
                 CloseDate = ValueToArray(entity.Data.GetValueAsDateTime(DataAttributeNames.CloseDate)),
                 Urn = ValueToArray(entity.Data.GetValueAsLong(DataAttributeNames.Urn)),

@@ -182,6 +182,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
                 Name = model.Name,
                 Type = model.Type,
                 SubType = model.SubType,
+                Status = model.Status,
                 OpenDate = model.OpenDate,
                 CloseDate = model.CloseDate,
                 Urn = model.Urn,
