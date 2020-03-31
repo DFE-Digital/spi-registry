@@ -229,6 +229,7 @@ namespace Dfe.Spi.Registry.Application.Matching
                 CloseDate = GetUniqueNonNullDateTimeDataAttributeValues(linkedEntities, DataAttributeNames.CloseDate),
                 Urn = GetUniqueNonNullLongDataAttributeValues(linkedEntities, DataAttributeNames.Urn),
                 Ukprn = GetUniqueNonNullLongDataAttributeValues(linkedEntities, DataAttributeNames.Ukprn),
+                Uprn = GetUniqueNonNullStringDataAttributeValues(linkedEntities, DataAttributeNames.Uprn),
                 CompaniesHouseNumber = GetUniqueNonNullStringDataAttributeValues(linkedEntities, DataAttributeNames.CompaniesHouseNumber),
                 CharitiesCommissionNumber = GetUniqueNonNullStringDataAttributeValues(linkedEntities, DataAttributeNames.CharitiesCommissionNumber),
                 AcademyTrustCode = GetUniqueNonNullStringDataAttributeValues(linkedEntities, DataAttributeNames.AcademyTrustCode),
