@@ -145,6 +145,12 @@ namespace Dfe.Spi.Registry.Application.Entities
         public async Task<SynonymousEntitiesSearchResult> SearchAsync(SearchRequest criteria, string entityType,
             CancellationToken cancellationToken)
         {
+            var requestValidationResult = criteria.Validate();
+            if (!requestValidationResult.IsValid)
+            {
+                throw new InvalidRequestException(requestValidationResult);
+            }
+            
             var searchResults = await _searchIndex.SearchAsync(criteria, entityType, cancellationToken);
 
             var results = new List<SynonymousEntities>();

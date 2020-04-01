@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
+using Dfe.Spi.Registry.Application;
 using Dfe.Spi.Registry.Application.Entities;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Search;
@@ -52,9 +53,19 @@ namespace Dfe.Spi.Registry.Functions.Search
                 _logger.Info($"Searching {entityType} entities using {request}");
             }
 
-            var results = await _entityManager.SearchAsync(request, GetSingularEntityName(entityType), cancellationToken);
-            
-            return new OkObjectResult(results);
+            try
+            {
+                var results = await _entityManager.SearchAsync(request, GetSingularEntityName(entityType), cancellationToken);
+
+                return new OkObjectResult(results);
+            }
+            catch (InvalidRequestException ex)
+            {
+                return new BadRequestObjectResult(new
+                {
+                    ex.Reasons,
+                });
+            }
         }
 
         private static string GetSingularEntityName(string pluralEntityName)
