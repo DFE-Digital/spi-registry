@@ -17,7 +17,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
         public string Query { get; set; } = "";
         public string Filter { get; set; }
 
-        
+
         public void AppendQuery(SearchFieldDefinition field, string value)
         {
             if (IsNumericType(field.DataType))
@@ -49,84 +49,26 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
                 AppendFilter($"search.ismatch('\"{FormatStringValueForFilter(value)}\"', '{field.Name}')");
                 return;
             }
-            
+
             if (filterOperator == DataOperator.Between)
             {
-                string[] dateParts = value.Split(
-                    new string[] { " to " },
-                    StringSplitOptions.RemoveEmptyEntries);
-
-                if (dateParts.Length != 2)
-                {
-                    // Then get upset 💢
-                    throw new FormatException(
-                        $"Between values need to contain 2 valid " +
-                        $"{nameof(DateTime)}s, seperated by the keyword " +
-                        $"\"to\". For example, \"2018-06-29T00:00:00Z\" to " +
-                        $"\"2018-07-01T00:00:00Z\".");
-                }
-
-                // Else...
-                // Try and build up a group query of our own.
-                AcsSearch between = new AcsSearch("and");
-                between.AppendFilter(field, DataOperator.LessThan, dateParts.Last());
-                between.AppendFilter(field, DataOperator.GreaterThan, dateParts.First());
-
-                AddGroup(between);
+                AddBetweenFilter(field, value);
+                return;
             }
-            else {
 
-                if (filterOperator == DataOperator.In)
-                {
-                    var values = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim());
-                    var conditionValue = values.Aggregate((x, y) => $"{x},{y}");
-
-                    if (field.IsArray)
-                    {
-                        AppendFilter($"{field.Name}/any(x: search.in(x, '{FormatStringValueForFilter(conditionValue)}', ','))");
-                    }
-                    else
-                    {
-                        AppendFilter($"search.in({field.Name}, '{FormatStringValueForFilter(conditionValue)}', ',')");
-                    }
-                }
-                else
-                {
-                    string conditionValue;
-                    if (filterOperator == DataOperator.IsNull || filterOperator == DataOperator.IsNotNull)
-                    {
-                        conditionValue = "null";
-                    }
-                    else
-                    {
-                        if (IsNumericType(field.DataType))
-                        {
-                            conditionValue = value;
-                        }
-                        else if (IsDateType(field.DataType))
-                        {
-                            var dtm = value.ToDateTime();
-
-                            conditionValue = dtm.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
-                        }
-                        else
-                        {
-                            conditionValue = $"'{FormatStringValueForFilter(value)}'";
-                        }
-                    }
-
-                    var acsOperator = OperatorMappings[filterOperator];
-
-                    if (field.IsArray)
-                    {
-                        AppendFilter($"{field.Name}/any(x: x {acsOperator} {conditionValue})");
-                    }
-                    else
-                    {
-                        AppendFilter($"{field.Name} {acsOperator} {conditionValue}");
-                    }
-                }
+            if (filterOperator == DataOperator.In)
+            {
+                AddInFilter(field, value);
+                return;
             }
+
+            if (filterOperator == DataOperator.IsNull || filterOperator == DataOperator.IsNotNull)
+            {
+                AddNullFilter(field, filterOperator);
+                return;
+            }
+
+            AddConditionalFilter(field, filterOperator, value);
         }
 
         public void AppendFilter(string value)
@@ -147,6 +89,7 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
             {
                 AppendQuery($"({group.Query})");
             }
+
             if (!string.IsNullOrEmpty(group.Filter))
             {
                 AppendFilter($"({group.Filter})");
@@ -154,11 +97,95 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
         }
 
 
+        private void AddBetweenFilter(SearchFieldDefinition field, string value)
+        {
+            string[] dateParts = value.Split(
+                new string[] {" to "},
+                StringSplitOptions.RemoveEmptyEntries);
+
+            if (dateParts.Length != 2)
+            {
+                // Then get upset 💢
+                throw new FormatException(
+                    $"Between values need to contain 2 valid " +
+                    $"{nameof(DateTime)}s, seperated by the keyword " +
+                    $"\"to\". For example, \"2018-06-29T00:00:00Z\" to " +
+                    $"\"2018-07-01T00:00:00Z\".");
+            }
+
+            // Else...
+            // Try and build up a group query of our own.
+            AcsSearch between = new AcsSearch("and");
+            between.AppendFilter(field, DataOperator.LessThan, dateParts.Last());
+            between.AppendFilter(field, DataOperator.GreaterThan, dateParts.First());
+
+            AddGroup(between);
+        }
+
+        private void AddInFilter(SearchFieldDefinition field, string value)
+        {
+            
+            var values = value.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim());
+            var conditionValue = values.Aggregate((x, y) => $"{x},{y}");
+
+            if (field.IsArray)
+            {
+                AppendFilter($"{field.Name}/any(x: search.in(x, '{FormatStringValueForFilter(conditionValue)}', ','))");
+            }
+            else
+            {
+                AppendFilter($"search.in({field.Name}, '{FormatStringValueForFilter(conditionValue)}', ',')");
+            }
+        }
+
+        private void AddNullFilter(SearchFieldDefinition field, DataOperator filterOperator)
+        {
+            var baseCondition = $"{field.Name}/any()";
+            if (filterOperator == DataOperator.IsNull)
+            {
+                AppendFilter($"not {baseCondition}");
+            }
+            else // NotNull
+            {
+                AppendFilter(baseCondition);
+            }
+        }
+
+        private void AddConditionalFilter(SearchFieldDefinition field, DataOperator filterOperator, string value)
+        {
+            string conditionValue;
+            if (IsNumericType(field.DataType))
+            {
+                conditionValue = value;
+            }
+            else if (IsDateType(field.DataType))
+            {
+                var dtm = value.ToDateTime();
+
+                conditionValue = dtm.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+            }
+            else
+            {
+                conditionValue = $"'{FormatStringValueForFilter(value)}'";
+            }
+
+            var acsOperator = OperatorMappings[filterOperator];
+
+            if (field.IsArray)
+            {
+                AppendFilter($"{field.Name}/any(x: x {acsOperator} {conditionValue})");
+            }
+            else
+            {
+                AppendFilter($"{field.Name} {acsOperator} {conditionValue}");
+            }
+        }
 
         private string FormatStringValueForFilter(string value)
         {
             return value.Replace("'", "''");
         }
+
         private bool IsNumericType(Type type)
         {
             return type == typeof(int) ||
