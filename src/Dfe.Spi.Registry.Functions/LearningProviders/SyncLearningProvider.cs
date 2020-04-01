@@ -40,6 +40,13 @@ namespace Dfe.Spi.Registry.Functions.LearningProviders
         {
             _executionContextManager.SetContext(req.Headers);
             _logger.Info($"Start processing sync of learning provider from {source}...");
+
+            var validSource = ValidationHelpers.GetValidSourceSystemName(source);
+            if (string.IsNullOrEmpty(validSource))
+            {
+                _logger.Warning($"Received request to sync learning provider for unknown system {source}");
+                return new NotFoundResult();
+            }
             
             LearningProvider learningProvider;
             using (var reader = new StreamReader(req.Body))
@@ -51,7 +58,7 @@ namespace Dfe.Spi.Registry.Functions.LearningProviders
                 _logger.Info($"Received learning provider for sync: {JsonConvert.SerializeObject(learningProvider)}");
             }
 
-            await _learningProviderManager.SyncLearningProviderAsync(source, learningProvider, cancellationToken);
+            await _learningProviderManager.SyncLearningProviderAsync(validSource, learningProvider, cancellationToken);
             _logger.Info("Successfully sync'd learning provider");
             
             return new AcceptedResult();
