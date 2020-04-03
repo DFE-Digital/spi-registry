@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.UnitTesting.Fixtures;
+using Dfe.Spi.Common.WellKnownIdentifiers;
 using Dfe.Spi.Models.Entities;
 using Dfe.Spi.Registry.Application.ManagementGroups;
 using Dfe.Spi.Registry.Functions.ManagementGroups;
@@ -43,35 +44,67 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.ManagementGroups
         }
 
         [Test, NonRecursiveAutoData]
-        public async Task ThenItShouldCallManagementGroupManagerWithDeserializedManagementGroup(
-            ManagementGroup managementGroup, string source)
+        public async Task ThenItShouldCallManagementGroupManagerWithDeserializedManagementGroup(ManagementGroup managementGroup)
         {
             var req = new DefaultHttpRequest(new DefaultHttpContext())
             {
                 Body = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(managementGroup))),
             };
 
-            await _function.RunAsync(req, source, _cancellationToken);
+            await _function.RunAsync(req, SourceSystemNames.GetInformationAboutSchools, _cancellationToken);
 
             _managementGroupManagerMock.Verify(m =>
                     m.SyncManagementGroupAsync(
-                        source,
+                        SourceSystemNames.GetInformationAboutSchools,
                         It.Is<ManagementGroup>(mg =>
                             mg.Code == managementGroup.Code),
                         _cancellationToken),
                 Times.Once);
         }
+
+        [TestCase("gias", SourceSystemNames.GetInformationAboutSchools)]
+        [TestCase("ukrlp", SourceSystemNames.UkRegisterOfLearningProviders)]
+        [TestCase("uKrLp", SourceSystemNames.UkRegisterOfLearningProviders)]
+        public async Task ThenItShouldCorrectSourceSystemNameCasing(string actual, string expected)
+        {
+            var req = new DefaultHttpRequest(new DefaultHttpContext())
+            {
+                Body = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new ManagementGroup()))),
+            };
+
+            await _function.RunAsync(req, actual, _cancellationToken);
+
+            _managementGroupManagerMock.Verify(m =>
+                    m.SyncManagementGroupAsync(
+                        expected,
+                        It.IsAny<ManagementGroup>(),
+                        _cancellationToken),
+                Times.Once);
+        }
+        
+        [Test]
+        public async Task ThenItShouldReturnNotFoundIfSourceSystemNotRecognised()
+        {
+            var req = new DefaultHttpRequest(new DefaultHttpContext())
+            {
+                Body = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new LearningProvider()))),
+            };
+
+            var actual = await _function.RunAsync(req, "NotASystem", _cancellationToken);
+
+            Assert.IsNotNull(actual);
+            Assert.IsInstanceOf<NotFoundResult>(actual);
+        }
         
         [Test, NonRecursiveAutoData]
-        public async Task ThenItShouldReturnAcceptedResult(
-            LearningProvider learningProvider, string source)
+        public async Task ThenItShouldReturnAcceptedResult(LearningProvider learningProvider)
         {
             var req = new DefaultHttpRequest(new DefaultHttpContext())
             {
                 Body = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(learningProvider))),
             };
 
-            var actual = await _function.RunAsync(req, source, _cancellationToken);
+            var actual = await _function.RunAsync(req, SourceSystemNames.GetInformationAboutSchools, _cancellationToken);
 
             Assert.IsNotNull(actual);
             Assert.IsInstanceOf<AcceptedResult>(actual);

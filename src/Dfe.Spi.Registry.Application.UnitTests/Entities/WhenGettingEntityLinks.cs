@@ -216,7 +216,6 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
 
             Assert.IsNotNull(actual);
             Assert.AreEqual(link.LinkedEntities.Length, actual.Length);
-            _linkRepositoryMock.Verify(r=>r.GetLinkAsync(synonymPointer.LinkType, synonymPointer.LinkId, _cancellationToken), Times.Never);
         }
     }
 }

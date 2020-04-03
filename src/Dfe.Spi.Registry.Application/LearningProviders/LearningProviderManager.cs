@@ -41,6 +41,7 @@ namespace Dfe.Spi.Registry.Application.LearningProviders
                     {DataAttributeNames.Name, learningProvider.Name},
                     {DataAttributeNames.Type, learningProvider.Type},
                     {DataAttributeNames.SubType, learningProvider.SubType},
+                    {DataAttributeNames.Status, learningProvider.Status},
                     {DataAttributeNames.OpenDate, learningProvider.OpenDate?.ToSpiString()},
                     {DataAttributeNames.CloseDate, learningProvider.CloseDate?.ToSpiString()},
                     {DataAttributeNames.Urn, learningProvider.Urn.ToString()},

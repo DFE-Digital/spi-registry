@@ -54,8 +54,7 @@ namespace Dfe.Spi.Registry.Application.Entities
             string sourceSystemId,
             CancellationToken cancellationToken)
         {
-            var sourceEntity =
-                await _entityRepository.GetEntityAsync(entityType, sourceSystemName, sourceSystemId, cancellationToken);
+            var sourceEntity = await _entityRepository.GetEntityAsync(entityType, sourceSystemName, sourceSystemId, cancellationToken);
             var synonymLinkPointer = sourceEntity?.Links?.SingleOrDefault(l => l.LinkType == LinkTypes.Synonym);
             if (synonymLinkPointer == null)
             {
@@ -67,21 +66,13 @@ namespace Dfe.Spi.Registry.Application.Entities
             _logger.Debug(
                 $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} points to synonym {synonymLinkPointer.LinkId}");
 
-            var link = await _linkRepository.GetLinkAsync(synonymLinkPointer.LinkType, synonymLinkPointer.LinkId,
-                cancellationToken);
-            var entityPointers = link.LinkedEntities
-                .Where(le =>
-                    !(le.EntitySourceSystemName == sourceSystemName && le.EntitySourceSystemId == sourceSystemId))
-                .Select(le => new EntityPointer
+            var entityPointers = await GetOtherEntitiesInLinkAsync(sourceEntity, synonymLinkPointer, cancellationToken);
+            return entityPointers.Select(pointer =>
+                new EntityPointer
                 {
-                    SourceSystemName = le.EntitySourceSystemName,
-                    SourceSystemId = le.EntitySourceSystemId,
-                })
-                .ToArray();
-            _logger.Info(
-                $"Found {entityPointers} entities in the synonym {synonymLinkPointer} (Looked up for {entityType}:{sourceSystemName}:{sourceSystemId})");
-
-            return entityPointers;
+                    SourceSystemName = pointer.SourceSystemName,
+                    SourceSystemId = pointer.SourceSystemId,
+                }).ToArray();
         }
 
         public async Task<LinkedEntityPointer[]> GetEntityLinksAsync(
@@ -90,40 +81,36 @@ namespace Dfe.Spi.Registry.Application.Entities
             string sourceSystemId,
             CancellationToken cancellationToken)
         {
-            var sourceEntity =
-                await _entityRepository.GetEntityAsync(entityType, sourceSystemName, sourceSystemId, cancellationToken);
+            var sourceEntity = await _entityRepository.GetEntityAsync(entityType, sourceSystemName, sourceSystemId, cancellationToken);
+            
+            // Get non-synonym links
             var linkPointers = sourceEntity?.Links?.Where(l => l.LinkType != LinkTypes.Synonym)?.ToArray();
             if (linkPointers == null)
             {
-                _logger.Debug(
-                    $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} does not point to any links");
+                _logger.Debug($"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} does not point to any links");
                 return null;
             }
-
-            _logger.Debug(
-                $"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} points to {linkPointers.Length} links");
+            _logger.Debug($"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} points to {linkPointers.Length} links");
+            
+            // Get synonym link, as synonyms will be in other links but should be removed
+            var synonymLinkPointer = sourceEntity?.Links?.SingleOrDefault(l => l.LinkType == LinkTypes.Synonym);
+            var synonymousEntitiesPointers = synonymLinkPointer != null
+                ? await GetOtherEntitiesInLinkAsync(sourceEntity, synonymLinkPointer, cancellationToken)
+                : new LinkedEntityPointer[0];
 
             var entityPointers = new List<LinkedEntityPointer>();
             foreach (var linkPointer in linkPointers)
             {
-                var link = await _linkRepository.GetLinkAsync(linkPointer.LinkType, linkPointer.LinkId,
-                    cancellationToken);
-                var linkEntityPointers = link.LinkedEntities
-                    .Where(le =>
-                        !(le.EntitySourceSystemName == sourceSystemName && le.EntitySourceSystemId == sourceSystemId))
-                    .Select(le => new LinkedEntityPointer
-                    {
-                        SourceSystemName = le.EntitySourceSystemName,
-                        SourceSystemId = le.EntitySourceSystemId,
-                        LinkType = link.Type,
-                    })
-                    .ToArray();
-                _logger.Info(
-                    $"Found {linkEntityPointers} entities in the link {linkPointer} (Looked up for {entityType}:{sourceSystemName}:{sourceSystemId})");
-
-                entityPointers.AddRange(linkEntityPointers);
+                var linkedEntityPointers = await GetOtherEntitiesInLinkAsync(sourceEntity, linkPointer, cancellationToken);
+                var linkedEntityPointersThatAreNotSynonyms = linkedEntityPointers
+                    .Where(linkedEntityPointer =>
+                        !synonymousEntitiesPointers.Any(synonymEntityPointer => 
+                            synonymEntityPointer.EntityType == linkedEntityPointer.EntityType &&
+                            synonymEntityPointer.SourceSystemName == linkedEntityPointer.SourceSystemName &&
+                            synonymEntityPointer.SourceSystemId == linkedEntityPointer.SourceSystemId));
+                entityPointers.AddRange(linkedEntityPointersThatAreNotSynonyms);
             }
-
+            
             return entityPointers.Count == 0 ? null : entityPointers.ToArray();
         }
 
@@ -158,6 +145,12 @@ namespace Dfe.Spi.Registry.Application.Entities
         public async Task<SynonymousEntitiesSearchResult> SearchAsync(SearchRequest criteria, string entityType,
             CancellationToken cancellationToken)
         {
+            var requestValidationResult = criteria.Validate();
+            if (!requestValidationResult.IsValid)
+            {
+                throw new InvalidRequestException(requestValidationResult);
+            }
+            
             var searchResults = await _searchIndex.SearchAsync(criteria, entityType, cancellationToken);
 
             var results = new List<SynonymousEntities>();
@@ -206,6 +199,28 @@ namespace Dfe.Spi.Registry.Application.Entities
                 Taken = searchResults.Taken,
                 TotalNumberOfRecords = searchResults.TotalNumberOfRecords
             };
+        }
+
+
+
+        private async Task<LinkedEntityPointer[]> GetOtherEntitiesInLinkAsync(Entity sourceEntity, LinkPointer linkPointer, CancellationToken cancellationToken)
+        {
+            var link = await _linkRepository.GetLinkAsync(linkPointer.LinkType, linkPointer.LinkId,
+                cancellationToken);
+            var entityPointers = link.LinkedEntities
+                .Where(le =>
+                    !(le.EntitySourceSystemName == sourceEntity.SourceSystemName && le.EntitySourceSystemId == sourceEntity.SourceSystemId))
+                .Select(le => new LinkedEntityPointer
+                {
+                    EntityType = le.EntityType,
+                    SourceSystemName = le.EntitySourceSystemName,
+                    SourceSystemId = le.EntitySourceSystemId,
+                    LinkType = link.Type,
+                })
+                .ToArray();
+            _logger.Info($"Found {entityPointers} entities in the link {linkPointer} (Looked up for {sourceEntity.Type}:{sourceEntity.SourceSystemName}:{sourceEntity.SourceSystemId})");
+
+            return entityPointers;
         }
     }
 }

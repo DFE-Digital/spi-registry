@@ -40,6 +40,13 @@ namespace Dfe.Spi.Registry.Functions.ManagementGroups
         {
             _executionContextManager.SetContext(req.Headers);
             _logger.Info($"Start processing sync of management group from {source}...");
+
+            var validSource = ValidationHelpers.GetValidSourceSystemName(source);
+            if (string.IsNullOrEmpty(validSource))
+            {
+                _logger.Warning($"Received request to sync management group for unknown system {source}");
+                return new NotFoundResult();
+            }
             
             ManagementGroup managementGroup;
             using (var reader = new StreamReader(req.Body))
@@ -51,7 +58,7 @@ namespace Dfe.Spi.Registry.Functions.ManagementGroups
                 _logger.Info($"Received management group for sync: {JsonConvert.SerializeObject(managementGroup)}");
             }
 
-            await _managementGroupManager.SyncManagementGroupAsync(source, managementGroup, cancellationToken);
+            await _managementGroupManager.SyncManagementGroupAsync(validSource, managementGroup, cancellationToken);
             _logger.Info("Successfully sync'd management group");
             
             return new AcceptedResult();
