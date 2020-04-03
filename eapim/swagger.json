@@ -201,6 +201,56 @@
         }
       }
     },
+    "/management-groups/{system}/{id}/links": {
+      "get": {
+        "description": "Gets management group links.",
+        "operationId": "get-management-group-links",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "system",
+            "type": "string",
+            "description": "The name of the system.",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "type": "string",
+            "description": "The id of the management group.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "description": "Bearer token authentication.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-Internal-Request-Id",
+            "type": "string",
+            "description": "An internal request id. Should be a vaild guid.",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "X-External-Request-Id",
+            "description": "An optional external request id. Used in logging.",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Links were found, results are included in the body.",
+            "schema": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
     "/management-groups/sync/{source}": {
       "post": {
         "description": "Sync management group.",
