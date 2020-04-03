@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dfe.Spi.Common.Extensions;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
@@ -168,7 +169,8 @@ namespace Dfe.Spi.Registry.Application.Entities
                                 SourceSystemName = referenceParts[2],
                                 SourceSystemId = referenceParts[3],
                             }, 
-                        }
+                        },
+                        IndexedData = BuildIndexedData(searchDocument),
                     });
                 }
                 else if (referenceParts[0] == "link")
@@ -183,6 +185,7 @@ namespace Dfe.Spi.Registry.Application.Entities
                                 SourceSystemName = linkedEntity.EntitySourceSystemName,
                                 SourceSystemId = linkedEntity.EntitySourceSystemId,
                             }).ToArray(),
+                        IndexedData = BuildIndexedData(searchDocument),
                     });
                 }
                 else
@@ -221,6 +224,38 @@ namespace Dfe.Spi.Registry.Application.Entities
             _logger.Info($"Found {entityPointers} entities in the link {linkPointer} (Looked up for {sourceEntity.Type}:{sourceEntity.SourceSystemName}:{sourceEntity.SourceSystemId})");
 
             return entityPointers;
+        }
+
+        private Dictionary<string, string> BuildIndexedData(SearchDocument searchDocument)
+        {
+            if (searchDocument == null)
+            {
+                return null;
+            }
+            var indexedData = new Dictionary<string, string>
+            {
+                {"Name", searchDocument.Name?.FirstOrDefault()},
+                {"Type", searchDocument.Type?.FirstOrDefault()},
+                {"SubType", searchDocument.SubType?.FirstOrDefault()},
+                {"Status", searchDocument.Status?.FirstOrDefault()},
+                {"OpenDate", searchDocument.OpenDate?.FirstOrDefault().ToSpiString()},
+                {"CloseDate", searchDocument.CloseDate?.FirstOrDefault().ToSpiString()},
+                {"Urn", searchDocument.Urn?.FirstOrDefault().ToString()},
+                {"Ukprn", searchDocument.Ukprn?.FirstOrDefault().ToString()},
+                {"Uprn", searchDocument.Uprn?.FirstOrDefault()},
+                {"CompaniesHouseNumber", searchDocument.CompaniesHouseNumber?.FirstOrDefault()},
+                {"CharitiesCommissionNumber", searchDocument.CharitiesCommissionNumber?.FirstOrDefault()},
+                {"AcademyTrustCode", searchDocument.AcademyTrustCode?.FirstOrDefault()},
+                {"DfeNumber", searchDocument.DfeNumber?.FirstOrDefault()},
+                {"LocalAuthorityCode", searchDocument.LocalAuthorityCode?.FirstOrDefault()},
+                {"ManagementGroupType", searchDocument.ManagementGroupType?.FirstOrDefault()},
+                {"ManagementGroupId", searchDocument.ManagementGroupId?.FirstOrDefault()},
+            };
+            return indexedData
+                .Where(kvp => !string.IsNullOrEmpty(kvp.Value))
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value);
         }
     }
 }
