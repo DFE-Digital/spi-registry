@@ -4,9 +4,9 @@
         <AzureFunctionsVersion>v2</AzureFunctionsVersion>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Dfe.Spi.Common.Http.Server" Version="1.0.14" />
+        <PackageReference Include="Dfe.Spi.Common.Http.Server" Version="2.0.0" />
         <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.1" />
-        <PackageReference Include="Dfe.Spi.Common.Models" Version="1.0.5" />
+        <PackageReference Include="Dfe.Spi.Common.Models" Version="1.1.0" />
         <PackageReference Include="Dfe.Spi.Models" Version="1.0.16" />
         <PackageReference Include="Microsoft.Azure.Cosmos.Table" Version="1.0.6" />
         <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.0.0" />
@@ -29,5 +29,9 @@
       <ProjectReference Include="..\Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch\Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.AzureStorage\Dfe.Spi.Registry.Infrastructure.AzureStorage.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Remove="Schemas\search-entities-body.json" />
+      <EmbeddedResource Include="Schemas\search-entities-body.json" />
     </ItemGroup>
 </Project>
