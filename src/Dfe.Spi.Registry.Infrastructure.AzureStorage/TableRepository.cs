@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -81,8 +82,16 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
                     }
                     batch.InsertOrReplace(entity);
                 }
-            
-                await Table.ExecuteBatchAsync(batch, cancellationToken);
+
+                try
+                {
+                    await Table.ExecuteBatchAsync(batch, cancellationToken);
+                }
+                catch (StorageException ex)
+                {
+                    var details = ex.RequestInformation?.HttpStatusMessage ?? ex.Message;
+                    throw new Exception($"Error insert or replacing batch {position}-{position + segment.Count()}: {details}", ex);
+                }
 
                 position += batchSize;
             } while (position < models.Length);
@@ -109,8 +118,16 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage
                     }
                     batch.Delete(entity);
                 }
-            
-                await Table.ExecuteBatchAsync(batch, cancellationToken);
+
+                try
+                {
+                    await Table.ExecuteBatchAsync(batch, cancellationToken);
+                }
+                catch (StorageException ex)
+                {
+                    var details = ex.RequestInformation?.HttpStatusMessage ?? ex.Message;
+                    throw new Exception($"Error deleting batch {position}-{position + segment.Count()}: {details}", ex);
+                }
 
                 position += batchSize;
             } while (position < models.Length);
