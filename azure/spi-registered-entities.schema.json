@@ -302,6 +302,36 @@
       "searchAnalyzer": null,
       "synonymMaps": [],
       "fields": []
+    },
+    {
+      "name": "ManagementGroupUkprn",
+      "type": "Collection(Edm.Int64)",
+      "facetable": false,
+      "filterable": true,
+      "key": false,
+      "retrievable": true,
+      "searchable": false,
+      "sortable": false,
+      "analyzer": null,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "synonymMaps": [],
+      "fields": []
+    },
+    {
+      "name": "ManagementGroupCompaniesHouseNumber",
+      "type": "Collection(Edm.String)",
+      "facetable": false,
+      "filterable": true,
+      "key": false,
+      "retrievable": true,
+      "searchable": false,
+      "sortable": false,
+      "analyzer": null,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "synonymMaps": [],
+      "fields": []
     }
   ],
   "suggesters": [],

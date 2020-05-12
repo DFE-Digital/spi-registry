@@ -237,6 +237,8 @@ namespace Dfe.Spi.Registry.Application.Matching
                 LocalAuthorityCode = GetUniqueNonNullStringDataAttributeValues(linkedEntities, DataAttributeNames.LocalAuthorityCode),
                 ManagementGroupType = GetUniqueNonNullStringDataAttributeValues(linkedEntities, DataAttributeNames.ManagementGroupType),
                 ManagementGroupId = GetUniqueNonNullStringDataAttributeValues(linkedEntities, DataAttributeNames.ManagementGroupId),
+                ManagementGroupUkprn = GetUniqueNonNullLongDataAttributeValues(linkedEntities, DataAttributeNames.ManagementGroupUkprn),
+                ManagementGroupCompaniesHouseNumber = GetUniqueNonNullStringDataAttributeValues(linkedEntities, DataAttributeNames.ManagementGroupCompaniesHouseNumber),
             };
 
             await _searchIndex.AddOrUpdateAsync(searchDocument, cancellationToken);

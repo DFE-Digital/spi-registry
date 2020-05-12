@@ -25,13 +25,14 @@ namespace Dfe.Spi.Registry.Application
                 Ukprn = ValueToArray(entity.Data.GetValueAsLong(DataAttributeNames.Ukprn)),
                 Uprn = ValueToArray(entity.Data.GetValue(DataAttributeNames.Uprn)),
                 CompaniesHouseNumber = ValueToArray(entity.Data.GetValue(DataAttributeNames.CompaniesHouseNumber)),
-                CharitiesCommissionNumber =
-                    ValueToArray(entity.Data.GetValue(DataAttributeNames.CharitiesCommissionNumber)),
+                CharitiesCommissionNumber = ValueToArray(entity.Data.GetValue(DataAttributeNames.CharitiesCommissionNumber)),
                 AcademyTrustCode = ValueToArray(entity.Data.GetValue(DataAttributeNames.AcademyTrustCode)),
                 DfeNumber = ValueToArray(entity.Data.GetValue(DataAttributeNames.DfeNumber)),
                 LocalAuthorityCode = ValueToArray(entity.Data.GetValue(DataAttributeNames.LocalAuthorityCode)),
                 ManagementGroupType = ValueToArray(entity.Data.GetValue(DataAttributeNames.ManagementGroupType)),
                 ManagementGroupId = ValueToArray(entity.Data.GetValue(DataAttributeNames.ManagementGroupId)),
+                ManagementGroupUkprn = ValueToArray(entity.Data.GetValueAsLong(DataAttributeNames.ManagementGroupUkprn)),
+                ManagementGroupCompaniesHouseNumber = ValueToArray(entity.Data.GetValue(DataAttributeNames.ManagementGroupCompaniesHouseNumber)),
             };
         }
 

@@ -59,5 +59,11 @@ namespace Dfe.Spi.Registry.Domain.Search
         
         [SearchFieldTypeAttribute(SearchFieldType.String)]
         public virtual string[] ManagementGroupId { get; set; }
+        
+        [SearchFieldTypeAttribute(SearchFieldType.String)]
+        public virtual long[] ManagementGroupUkprn { get; set; }
+        
+        [SearchFieldTypeAttribute(SearchFieldType.String)]
+        public virtual string[] ManagementGroupCompaniesHouseNumber { get; set; }
     }
 }

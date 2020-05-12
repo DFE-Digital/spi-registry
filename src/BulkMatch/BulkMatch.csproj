@@ -8,7 +8,7 @@
     <ItemGroup>
         <PackageReference Include="CommandLineParser" Version="2.6.0" />
         <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.1" />
-        <PackageReference Include="Dfe.Spi.Common.WellKnownIdentifiers" Version="1.0.2" />
+        <PackageReference Include="Dfe.Spi.Common.WellKnownIdentifiers" Version="1.2.1" />
         <PackageReference Include="Microsoft.Spatial" Version="7.6.3" />
     </ItemGroup>
 

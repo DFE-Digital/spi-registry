@@ -18,5 +18,7 @@ namespace Dfe.Spi.Registry.Domain
         public const string LocalAuthorityCode = "localAuthorityCode";
         public const string ManagementGroupType = "managementGroupType";
         public const string ManagementGroupId = "managementGroupId";
+        public const string ManagementGroupUkprn = "managementGroupUkprn";
+        public const string ManagementGroupCompaniesHouseNumber = "managementGroupCompaniesHouseNumber";
     }
 }
