@@ -195,6 +195,8 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
                 LocalAuthorityCode = model.LocalAuthorityCode,
                 ManagementGroupType = model.ManagementGroupType,
                 ManagementGroupId = model.ManagementGroupId,
+                ManagementGroupUkprn = model.ManagementGroupUkprn,
+                ManagementGroupCompaniesHouseNumber = model.ManagementGroupCompaniesHouseNumber,
             };
         }
 

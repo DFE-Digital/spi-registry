@@ -54,6 +54,8 @@ namespace Dfe.Spi.Registry.Application.LearningProviders
                     {DataAttributeNames.LocalAuthorityCode, learningProvider.LocalAuthorityCode},
                     {DataAttributeNames.ManagementGroupType, learningProvider.ManagementGroup?.Type},
                     {DataAttributeNames.ManagementGroupId, learningProvider.ManagementGroup?.Code},
+                    {DataAttributeNames.ManagementGroupUkprn, learningProvider.ManagementGroup?.Ukprn?.ToString()},
+                    {DataAttributeNames.ManagementGroupCompaniesHouseNumber, learningProvider.ManagementGroup?.CompaniesHouseNumber},
                 }).Where(kvp => kvp.Value != null)
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             
@@ -64,10 +66,6 @@ namespace Dfe.Spi.Registry.Application.LearningProviders
                 SourceSystemId = GetSourceSystemId(source, learningProvider),
                 Data = data,
             };
-            if (learningProvider.ManagementGroup != null)
-            {
-                entity.Data.Add("managementGroupCode", learningProvider.ManagementGroup.Code);
-            }
             
 
             _logger.Info(

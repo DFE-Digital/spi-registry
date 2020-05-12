@@ -65,5 +65,11 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
         
         [IsFilterable]
         public override string[] ManagementGroupId { get; set; }
+        
+        [IsFilterable]
+        public override long[] ManagementGroupUkprn { get; set; }
+        
+        [IsFilterable]
+        public override string[] ManagementGroupCompaniesHouseNumber { get; set; }
     }
 }

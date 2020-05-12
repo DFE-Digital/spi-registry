@@ -250,6 +250,8 @@ namespace Dfe.Spi.Registry.Application.Entities
                 {"LocalAuthorityCode", searchDocument.LocalAuthorityCode?.FirstOrDefault()},
                 {"ManagementGroupType", searchDocument.ManagementGroupType?.FirstOrDefault()},
                 {"ManagementGroupId", searchDocument.ManagementGroupId?.FirstOrDefault()},
+                {"ManagementGroupUkprn", searchDocument.ManagementGroupUkprn?.FirstOrDefault().ToString()},
+                {"ManagementGroupCompaniesHouseNumber", searchDocument.ManagementGroupCompaniesHouseNumber?.FirstOrDefault()},
             };
             return indexedData
                 .Where(kvp => !string.IsNullOrEmpty(kvp.Value))
