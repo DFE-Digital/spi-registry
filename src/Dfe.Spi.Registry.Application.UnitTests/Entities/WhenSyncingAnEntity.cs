@@ -33,6 +33,13 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Entities
             _matchingQueueMock = new Mock<IMatchingQueue>();
             
             _searchIndexMock = new Mock<ISearchIndex>();
+            _searchIndexMock.Setup(idx =>
+                    idx.SearchAsync(It.IsAny<SearchRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new SearchIndexResult
+                {
+                    Results = new SearchDocument[0],
+                    TotalNumberOfRecords = 0,
+                });
 
             _loggerMock = new Mock<ILoggerWrapper>();
 

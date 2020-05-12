@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Extensions;
 using Dfe.Spi.Common.Logging.Definitions;
+using Dfe.Spi.Common.Models;
+using Dfe.Spi.Registry.Domain;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Links;
 using Dfe.Spi.Registry.Domain.Matching;
@@ -83,7 +85,7 @@ namespace Dfe.Spi.Registry.Application.Entities
             CancellationToken cancellationToken)
         {
             var sourceEntity = await _entityRepository.GetEntityAsync(entityType, sourceSystemName, sourceSystemId, cancellationToken);
-            
+
             // Get non-synonym links
             var linkPointers = sourceEntity?.Links?.Where(l => l.LinkType != LinkTypes.Synonym)?.ToArray();
             if (linkPointers == null)
@@ -91,8 +93,9 @@ namespace Dfe.Spi.Registry.Application.Entities
                 _logger.Debug($"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} does not point to any links");
                 return null;
             }
+
             _logger.Debug($"Source entity {entityType}:{sourceSystemName}:{sourceSystemId} points to {linkPointers.Length} links");
-            
+
             // Get synonym link, as synonyms will be in other links but should be removed
             var synonymLinkPointer = sourceEntity?.Links?.SingleOrDefault(l => l.LinkType == LinkTypes.Synonym);
             var synonymousEntitiesPointers = synonymLinkPointer != null
@@ -105,13 +108,13 @@ namespace Dfe.Spi.Registry.Application.Entities
                 var linkedEntityPointers = await GetOtherEntitiesInLinkAsync(sourceEntity, linkPointer, cancellationToken);
                 var linkedEntityPointersThatAreNotSynonyms = linkedEntityPointers
                     .Where(linkedEntityPointer =>
-                        !synonymousEntitiesPointers.Any(synonymEntityPointer => 
+                        !synonymousEntitiesPointers.Any(synonymEntityPointer =>
                             synonymEntityPointer.EntityType == linkedEntityPointer.EntityType &&
                             synonymEntityPointer.SourceSystemName == linkedEntityPointer.SourceSystemName &&
                             synonymEntityPointer.SourceSystemId == linkedEntityPointer.SourceSystemId));
                 entityPointers.AddRange(linkedEntityPointersThatAreNotSynonyms);
             }
-            
+
             return entityPointers.Count == 0 ? null : entityPointers.ToArray();
         }
 
@@ -126,13 +129,13 @@ namespace Dfe.Spi.Registry.Application.Entities
                 existing.Data = entity.Data;
                 entityToStore = existing;
             }
-            
+
             await _entityRepository.StoreAsync(entityToStore, cancellationToken);
-            
+
             if (entityToStore.Links == null || !entityToStore.Links.Any(l => l.LinkType == LinkTypes.Synonym))
             {
                 var document = entityToStore.ToSearchDocument();
-                await _searchIndex.AddOrUpdateAsync(document, cancellationToken);
+                await AddOrUpdateDocumentInSearch(document, cancellationToken);
             }
 
             await _matchingQueue.EnqueueAsync(new EntityForMatching
@@ -151,7 +154,7 @@ namespace Dfe.Spi.Registry.Application.Entities
             {
                 throw new InvalidRequestException(requestValidationResult);
             }
-            
+
             var searchResults = await _searchIndex.SearchAsync(criteria, entityType, cancellationToken);
 
             var results = new List<SynonymousEntities>();
@@ -168,7 +171,7 @@ namespace Dfe.Spi.Registry.Application.Entities
                             {
                                 SourceSystemName = referenceParts[2],
                                 SourceSystemId = referenceParts[3],
-                            }, 
+                            },
                         },
                         IndexedData = BuildIndexedData(searchDocument),
                     });
@@ -194,7 +197,7 @@ namespace Dfe.Spi.Registry.Application.Entities
                         $"Search result had unexpected reference pointer '{searchDocument.ReferencePointer}'");
                 }
             }
-            
+
             return new SynonymousEntitiesSearchResult
             {
                 Results = results.ToArray(),
@@ -203,7 +206,6 @@ namespace Dfe.Spi.Registry.Application.Entities
                 TotalNumberOfRecords = searchResults.TotalNumberOfRecords
             };
         }
-
 
 
         private async Task<LinkedEntityPointer[]> GetOtherEntitiesInLinkAsync(Entity sourceEntity, LinkPointer linkPointer, CancellationToken cancellationToken)
@@ -221,7 +223,8 @@ namespace Dfe.Spi.Registry.Application.Entities
                     LinkType = link.Type,
                 })
                 .ToArray();
-            _logger.Info($"Found {entityPointers} entities in the link {linkPointer} (Looked up for {sourceEntity.Type}:{sourceEntity.SourceSystemName}:{sourceEntity.SourceSystemId})");
+            _logger.Info(
+                $"Found {entityPointers} entities in the link {linkPointer} (Looked up for {sourceEntity.Type}:{sourceEntity.SourceSystemName}:{sourceEntity.SourceSystemId})");
 
             return entityPointers;
         }
@@ -232,6 +235,7 @@ namespace Dfe.Spi.Registry.Application.Entities
             {
                 return null;
             }
+
             var indexedData = new Dictionary<string, string>
             {
                 {"Name", searchDocument.Name?.FirstOrDefault()},
@@ -258,6 +262,43 @@ namespace Dfe.Spi.Registry.Application.Entities
                 .ToDictionary(
                     kvp => kvp.Key,
                     kvp => kvp.Value);
+        }
+
+        private async Task AddOrUpdateDocumentInSearch(SearchDocument document, CancellationToken cancellationToken)
+        {
+            // Check if the document is already in the index
+            var existingSearchDocumentResult = await _searchIndex.SearchAsync(
+                new SearchRequest
+                {
+                    Groups = new[]
+                    {
+                        new SearchGroup
+                        {
+                            Filter = new[]
+                            {
+                                new DataFilter
+                                {
+                                    Field = "ReferencePointer",
+                                    Operator = DataOperator.Equals,
+                                    Value = document.ReferencePointer,
+                                },
+                            },
+                            CombinationOperator = "and",
+                        },
+                    },
+                    CombinationOperator = "and",
+                    Skip = 0,
+                    Take = 1,
+                }, document.EntityType, cancellationToken);
+            
+            // If it is then update the id so that it is replaced
+            if (existingSearchDocumentResult.Results.Length == 1)
+            {
+                document.Id = existingSearchDocumentResult.Results[0].Id;
+            }
+
+            // Send to index
+            await _searchIndex.AddOrUpdateAsync(document, cancellationToken);
         }
     }
 }
