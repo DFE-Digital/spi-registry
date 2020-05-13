@@ -19,7 +19,7 @@ namespace OfflineBulkMatcher.Output
         public void WriteLink(Link link)
         {
             var partitionKey = $"{link.Type}:{link.Id}".ToLower();
-            var createdAt = DateTime.UtcNow.ToString("dd/MM/yyyyTHH:mm:ss.fffZ");
+            var createdAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
             var createdBy = "BulkMatcher";
             var createdReason = "Bulk match on URN/UKPRN/ManagementGroupCode";
             foreach (var pointer in link.Contents)
