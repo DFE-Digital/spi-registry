@@ -57,12 +57,16 @@ namespace OfflineBulkMatcher.Output
                 ukrlpLearningProvider.ManagementGroup?.Type);
             var managementGroupId = GetDistinctArray(giasLearningProvider.ManagementGroup?.Code,
                 ukrlpLearningProvider.ManagementGroup?.Code);
+            var managementGroupUkprn = GetDistinctArray(giasLearningProvider.ManagementGroup?.Ukprn, 
+                ukrlpLearningProvider.ManagementGroup?.Ukprn);
+            var managementGroupCompaniesHouseNumber = GetDistinctArray(giasLearningProvider.ManagementGroup?.CompaniesHouseNumber,
+                ukrlpLearningProvider.ManagementGroup?.CompaniesHouseNumber);
 
             WriteEntry(id, sortableName, entityType, referencePointer,
                 name, type, subType, status, openDate, closeDate,
                 urn, ukprn, uprn, companiesHouseNumber, charityCommisionNumber,
                 academyTrustCode, dfeNumber, localAuthorityCode,
-                managementGroupType, managementGroupId);
+                managementGroupType, managementGroupId, managementGroupUkprn, managementGroupCompaniesHouseNumber);
         }
 
         public void WriteEntity(LearningProvider learningProvider, string sourceSystemName)
@@ -91,12 +95,14 @@ namespace OfflineBulkMatcher.Output
             var localAuthorityCode = GetDistinctArray(learningProvider.LocalAuthorityCode);
             var managementGroupType = GetDistinctArray(learningProvider.ManagementGroup?.Type);
             var managementGroupId = GetDistinctArray(learningProvider.ManagementGroup?.Code);
+            var managementGroupUkprn = GetDistinctArray(learningProvider.ManagementGroup?.Ukprn);
+            var managementGroupCompaniesHouseNumber = GetDistinctArray(learningProvider.ManagementGroup?.CompaniesHouseNumber);
 
             WriteEntry(id, sortableName, entityType, referencePointer,
                 name, type, subType, status, openDate, closeDate,
                 urn, ukprn, uprn, companiesHouseNumber, charityCommisionNumber,
                 academyTrustCode, dfeNumber, localAuthorityCode,
-                managementGroupType, managementGroupId);
+                managementGroupType, managementGroupId, managementGroupUkprn, managementGroupCompaniesHouseNumber);
         }
 
         public void WriteEntity(ManagementGroup managementGroup, string sourceSystemName)
@@ -121,12 +127,14 @@ namespace OfflineBulkMatcher.Output
             var localAuthorityCode = new string[0];
             var managementGroupType = GetDistinctArray(managementGroup.Type);
             var managementGroupId = GetDistinctArray(managementGroup.Code);
+            var managementGroupUkprn = GetDistinctArray(managementGroup?.Ukprn);
+            var managementGroupCompaniesHouseNumber = GetDistinctArray(managementGroup?.CompaniesHouseNumber);
 
             WriteEntry(id, sortableName, entityType, referencePointer,
                 name, type, subType, status, openDate, closeDate,
                 urn, ukprn, uprn, companiesHouseNumber, charityCommisionNumber,
                 academyTrustCode, dfeNumber, localAuthorityCode,
-                managementGroupType, managementGroupId);
+                managementGroupType, managementGroupId, managementGroupUkprn, managementGroupCompaniesHouseNumber);
         }
 
         public void Save()
@@ -141,7 +149,7 @@ namespace OfflineBulkMatcher.Output
             DateTime[] closeDate,
             long[] urn, long[] ukprn, string[] uprn, string[] companiesHouseNumber, string[] charityCommisionNumber,
             string[] academyTrustCode, string[] dfeNumber, string[] localAuthorityCode,
-            string[] managementGroupType, string[] managementGroupId)
+            string[] managementGroupType, string[] managementGroupId, long[] managementGroupUkprn, string[] managementGroupCompaniesHouseNumber)
         {
             _value.Add(new JObject(
                 new JProperty("@search.action", "upload"),
@@ -169,7 +177,11 @@ namespace OfflineBulkMatcher.Output
                 new JProperty("ManagementGroupType",
                     managementGroupType != null ? new JArray(managementGroupType) : null),
                 new JProperty("ManagementGroupId",
-                    managementGroupId != null ? new JArray(managementGroupId) : null)));
+                    managementGroupId != null ? new JArray(managementGroupId) : null),
+                new JProperty("ManagementGroupUkprn",
+                    managementGroupId != null ? new JArray(managementGroupUkprn) : null),
+                new JProperty("ManagementGroupCompaniesHouseNumber",
+                    managementGroupId != null ? new JArray(managementGroupCompaniesHouseNumber) : null)));
         }
 
         private string[] GetDistinctArray(params string[] values)
