@@ -9,6 +9,7 @@ using Dapper;
 using Dfe.Spi.Common.Models;
 using Dfe.Spi.Registry.Domain.Entities;
 using Dfe.Spi.Registry.Domain.Search;
+using Meridian.MeaningfulToString;
 
 namespace Dfe.Spi.Registry.Infrastructure.SqlServer
 {
@@ -23,199 +24,165 @@ namespace Dfe.Spi.Registry.Infrastructure.SqlServer
 
         public async Task<SynonymousEntitiesSearchResult> SearchAsync(SearchRequest criteria, string entityType, CancellationToken cancellationToken)
         {
-            var query = GetResultsQuery(criteria, entityType);
-            var countQuery = GetCountQuery(criteria, entityType);
-            
+
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync(cancellationToken);
 
-                var searchResults = await connection.QueryAsync<SearchResultEntity>(query);
-                var totalNumberOfRecords = await connection.ExecuteScalarAsync<int>(countQuery, cancellationToken);
-                
-                var results = new List<SynonymousEntities>();
-                SynonymousEntities current = null;
-                string currentPointer = null;
-                foreach (var searchResultEntity in searchResults)
-                {
-                    if (currentPointer == null || searchResultEntity.PointerId != currentPointer)
-                    {
-                        current = new SynonymousEntities
-                        {
-                            IndexedData = new Dictionary<string, string>(),
-                        };
-                        currentPointer = searchResultEntity.PointerId;
-                        results.Add(current);
+                var count = await GetTotalNumberOfRecords(connection, criteria, entityType);
+                var results = await GetPageOfData(connection, criteria, entityType);
 
-                        if (searchResultEntity.PointerId.StartsWith("link:"))
-                        {
-                            var linkId = searchResultEntity.PointerId.Substring(5);
-                            current.Entities = await GetLinkedEntitiesAsync(connection, linkId, cancellationToken);
-                        }
-                        else
-                        {
-                            current.Entities = new[]
+                return new SynonymousEntitiesSearchResult
+                {
+                    Results = results,
+                    Skipped = criteria.Skip,
+                    Taken = results.Length,
+                    TotalNumberOfRecords = count,
+                };
+            }
+        }
+
+
+        private async Task<int> GetTotalNumberOfRecords(SqlConnection connection, SearchRequest criteria, string entityType)
+        {
+            var countQuery = GetCountQuery(criteria, entityType);
+            var count = await connection.ExecuteScalarAsync<int>(countQuery);
+            return count;
+        }
+        private async Task<SynonymousEntities[]> GetPageOfData(SqlConnection connection, SearchRequest criteria, string entityType)
+        {
+            var dataQuery = GetPagedDataQuery(criteria, entityType);
+            var page = await connection.QueryAsync<SearchResultEntity>(dataQuery);
+            
+            var results = new List<SynonymousEntities>();
+            var currentPointerId = Guid.Empty;
+            SynonymousEntities currentResult = null;
+            foreach (var searchResultEntity in page)
+            {
+                // Check if we are on a new result
+                if (currentPointerId != searchResultEntity.PointerId)
+                {
+                    currentResult = new SynonymousEntities
+                    {
+                        Entities = new EntityPointer[0],
+                        IndexedData = new Dictionary<string, string>(),
+                    };
+                    currentPointerId = searchResultEntity.PointerId;
+                    results.Add(currentResult);
+                }
+
+                // Check if we need to added the synonym
+                var referenceAlreadyAdded = currentResult.Entities.Any(e =>
+                    e.SourceSystemName.Equals(searchResultEntity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                    e.SourceSystemId.Equals(searchResultEntity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase));
+                if (!referenceAlreadyAdded)
+                {
+                    currentResult.Entities =
+                        currentResult.Entities
+                            .Concat(new[]
                             {
                                 new EntityPointer
                                 {
                                     SourceSystemName = searchResultEntity.SourceSystemName,
                                     SourceSystemId = searchResultEntity.SourceSystemId,
                                 },
-                            };
-                        }
-                    }
-                    
-                    current.IndexedData.Add(searchResultEntity.AttributeName, searchResultEntity.AttributeValue);
+                            })
+                            .ToArray();
                 }
                 
-                return new SynonymousEntitiesSearchResult
+                // Check if we need to add data
+                var resultForFirstReference =
+                    currentResult.Entities[0].SourceSystemName.Equals(searchResultEntity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                    currentResult.Entities[0].SourceSystemId.Equals(searchResultEntity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase);
+                if (resultForFirstReference)
                 {
-                    Results = results.ToArray(),
-                    Skipped = criteria.Skip,
-                    Taken = results.Count,
-                    TotalNumberOfRecords = totalNumberOfRecords,
-                };
+                    currentResult.IndexedData.Add(searchResultEntity.AttributeName, searchResultEntity.AttributeValue);
+                }
             }
+
+            return results.ToArray();
         }
-
-
-        private string GetResultsQuery(SearchRequest criteria, string entityType)
+        private string GetPagedDataQuery(SearchRequest criteria, string entityType)
         {
-            var pagesSearchQuery = GetPagedSearchQuery(criteria, entityType);
-            return "SELECT re.PointerId, e.SourceSystemName, e.SourceSystemId, ea.AttributeName, ea.AttributeValue " +
-                   $"FROM ({pagesSearchQuery}) re " +
-                   "JOIN Registry.EntityAttribute ea ON re.MinEntityId = ea.EntityId " +
-                   "JOIN Registry.Entity e ON re.MinEntityId = e.Id " +
-                   "ORDER BY re.PointerId";
+            var resultsQuery = GetResultsQuery(criteria, entityType);
+            var pagesResultsQuery = $"{resultsQuery} ORDER BY COALESCE(synonyms.LinkId, results.EntityId) " +
+                                    $"OFFSET {criteria.Skip} ROWS FETCH NEXT {criteria.Take} ROWS ONLY";
+            var linkedQuery =
+                "SELECT le.LinkId, le.EntityId, e.EntityType, e.SourceSystemName, e.SourceSystemId " +
+                "FROM Registry.LinkedEntity le " +
+                "JOIN Registry.Entity e ON le.EntityId = e.Id";
+            return "SELECT " +
+                "paged.PointerId," +
+                // "paged.PointerType," +
+                // "linked.EntityId EntityId," +
+                // "COALESCE(linked.EntityType, main.EntityType) EntityType," +
+                "COALESCE(linked.SourceSystemName, main.SourceSystemName) SourceSystemName," +
+                "COALESCE(linked.SourceSystemId, main.SourceSystemId) SourceSystemId," +
+                "ea.AttributeName," +
+                "ea.AttributeValue " +
+                $"FROM ({pagesResultsQuery}) paged " +
+                $"LEFT JOIN ({linkedQuery}) linked ON paged.PointerId = linked.LinkId AND paged.PointerType = 'link' " +
+                "JOIN Registry.Entity main ON paged.EntityId = main.Id " +
+                "JOIN Registry.EntityAttribute ea ON main.Id = ea.EntityId " +
+                "ORDER BY paged.PointerId, linked.EntityId";
         }
         private string GetCountQuery(SearchRequest criteria, string entityType)
         {
-            var searchQuery = GetSearchQuery(criteria, entityType);
-            return "SELECT COUNT(DISTINCT PointerId) " +
-                   $"FROM ({searchQuery}) res";
+            var resultsQuery = GetResultsQuery(criteria, entityType);
+            return $"SELECT COUNT(1) FROM ({resultsQuery}) results";
         }
-        private string GetPagedSearchQuery(SearchRequest criteria, string entityType)
+        private string GetResultsQuery(SearchRequest criteria, string entityType)
         {
             var searchQuery = GetSearchQuery(criteria, entityType);
-            return "SELECT res.PointerId, MIN(res.EntityId) MinEntityId " +
-                   $"FROM ({searchQuery}) res " +
-                   "GROUP BY res.PointerId " +
-                   $"ORDER BY res.PointerId OFFSET {criteria.Skip} ROWS FETCH NEXT {criteria.Take} ROWS ONLY";
+            var synonymsQuery = "SELECT le.LinkId, le.EntityId " +
+                                "FROM Registry.LinkedEntity le " +
+                                "JOIN Registry.Link l ON le.LinkId = l.Id " +
+                                "WHERE l.LinkType = 'Synonym'";
+            return "SELECT COALESCE(synonyms.LinkId, results.EntityId) PointerId, " +
+                   "IIF(synonyms.LinkId IS NOT NULL, 'link', 'entity') PointerType, " +
+                   "MIN(results.EntityId) EntityId " +
+                   $"FROM ({searchQuery}) results " +
+                   $"LEFT JOIN ({synonymsQuery}) synonyms ON results.EntityId = synonyms.EntityId " +
+                   "GROUP BY COALESCE(synonyms.LinkId, results.EntityId), IIF(synonyms.LinkId IS NOT NULL, 'link', 'entity')";
         }
         private string GetSearchQuery(SearchRequest criteria, string entityType)
         {
-            var query = new StringBuilder(
-                "SELECT CASE " +
-                "WHEN ls.LinkId IS NOT NULL THEN 'link:' + CAST(ls.LinkId as char(36)) " +
-                "ELSE 'entity:' + CAST(e.Id as char(36)) " + 
-                "END PointerId, " +
-                "e.Id EntityId " +
-                "FROM Registry.Entity e ");
-            var isAnd = criteria.CombinationOperator.Equals("and", StringComparison.InvariantCultureIgnoreCase);
-            var joinType = isAnd ? "JOIN" : "LEFT JOIN";
-            var orCondition = isAnd ? null : new StringBuilder();
-
-            for (var i = 0; i < criteria.Groups.Length; i++)
-            {
-                var groupQuery = GetGroupQuery(criteria.Groups[i], i, entityType);
-                query.Append($"{joinType} ({groupQuery}) g{i} ON e.Id = g{i}.Id ");
-
-                if (orCondition != null)
-                {
-                    if (orCondition.Length > 0)
-                    {
-                        orCondition.Append("OR ");
-                    }
-
-                    orCondition.Append($"g{i}.EntityId IS NOT NULL");
-                }
-            }
-
-            query.Append($"LEFT JOIN ({GetSynonymsQuery()}) ls ON ls.EntityId = e.Id");
-            if (!isAnd)
-            {
-                query.Append($" AND ({orCondition})");
-            }
-
-            return query.ToString();
+            var groupQueries = criteria.Groups
+                .Select(group => GetGroupQuery(group, entityType))
+                .Aggregate((x, y) => $"{x} UNION ALL {y}");
+            var fulfilmentCheck = criteria.CombinationOperator.Equals("and", StringComparison.InvariantCultureIgnoreCase)
+                ? $" HAVING COUNT(1) = {criteria.Groups.Length}"
+                : string.Empty;
+            return "SELECT Entityid " +
+                   $"FROM ({groupQueries}) groupresults " +
+                   "GROUP BY EntityId" +
+                   fulfilmentCheck;
         }
-        private string GetSynonymsQuery()
+        private string GetGroupQuery(SearchGroup group, string entityType)
         {
-            return "SELECT l.Id as LinkId, le.EntityId " +
-                   "FROM Registry.Link l " +
-                   "JOIN Registry.LinkedEntity le ON l.Id = le.LinkId " +
-                   "WHERE l.LinkType = 'Synonym'";
-        }
-        private string GetGroupQuery(SearchGroup group, int groupIndex, string entityType)
-        {
-            var query = new StringBuilder(
-                $"SELECT g{groupIndex}e.Id " +
-                $"FROM Registry.Entity g{groupIndex}e ");
-            var isAnd = group.CombinationOperator.Equals("and", StringComparison.InvariantCultureIgnoreCase);
-            var joinType = isAnd ? "JOIN" : "LEFT JOIN";
-            var orCondition = isAnd ? null : new StringBuilder();
-
-            for (var i = 0; i < group.Filter.Length; i++)
-            {
-                var filterQuery = GetFilterQuery(group.Filter[i]);
-                query.Append($"{joinType} ({filterQuery}) c{i} ON g{groupIndex}e.Id = c{i}.EntityId ");
-
-                if (orCondition != null)
-                {
-                    if (orCondition.Length > 0)
-                    {
-                        orCondition.Append("OR ");
-                    }
-
-                    orCondition.Append($"c{i}.EntityId IS NOT NULL ");
-                }
-            }
-
-            query.Append($"WHERE g{groupIndex}e.EntityType = '{entityType}'");
-            if (!isAnd)
-            {
-                query.Append($" AND ({orCondition})");
-            }
-
-            return query.ToString();
+            var filterQueries = group.Filter
+                .Select(filter => $"({GetFilterQuery(filter)})")
+                .Aggregate((x, y) => $"{x} OR {y}");
+            var fulfilmentCheck = group.CombinationOperator.Equals("and", StringComparison.InvariantCultureIgnoreCase)
+                ? $" HAVING COUNT(1) = {group.Filter.Length}"
+                : string.Empty;
+            return "SELECT EntityId " +
+                   "FROM Registry.EntityAttribute sea " +
+                   $"JOIN Registry.Entity se ON sea.EntityId = se.Id AND se.EntityType = '{entityType}'" +
+                   $"WHERE {filterQueries} " +
+                   $"GROUP BY EntityId" +
+                   fulfilmentCheck;
         }
         private string GetFilterQuery(DataFilter filter)
         {
-            string condition;
-            switch (filter.Operator)
-            {
-                case DataOperator.Between:
-                    var dateParts = filter.Value.Split(
-                        new string[] {" to "},
-                        StringSplitOptions.RemoveEmptyEntries);
-
-                    condition = $"AttributeValue BETWEEN '{dateParts.First()} AND {dateParts.Last()}'";
-                    break;
-                default:
-                    condition = $"AttributeValue = '{filter.Value}'";
-                    break;
-            }
-
-            return "SELECT EntityId " +
-                   "FROM Registry.EntityAttribute " +
-                   $"WHERE AttributeName = '{filter.Field}'" +
-                   $"AND {condition}";
-        }
-
-        private async Task<EntityPointer[]> GetLinkedEntitiesAsync(SqlConnection connection, string linkId, CancellationToken cancellationToken)
-        {
-            var query = "SELECT e.EntityType, e.SourceSystemName, e.SourceSystemId " +
-                        "FROM Registry.LinkedEntity le " +
-                        "JOIN Registry.Entity e ON le.EntityId = e.Id " +
-                        "WHERE le.LinkId = @LinkId";
-            var results = await connection.QueryAsync<EntityPointer>(query, param: new {linkId});
-            return results.ToArray();
+            var valueCondition = $"AttributeValue = '{filter.Value}'"; // TODO: Handle all filter operators
+            return $"AttributeName = '{filter.Field}' AND {valueCondition}";
         }
     }
-        
+
     public class SearchResultEntity
     {
-        public string PointerId { get; set; }
+        public Guid PointerId { get; set; }
         public string SourceSystemName { get; set; }
         public string SourceSystemId { get; set; }
         public string AttributeName { get; set; }
