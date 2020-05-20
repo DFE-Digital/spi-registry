@@ -51,6 +51,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OfflineBulkMatcher", "Offli
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TransferStorageToSql", "TransferStorageToSql\TransferStorageToSql.csproj", "{7B83A09A-4373-478E-9273-5B943C61990C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Infrastructure.SqlServer", "Dfe.Spi.Registry.Infrastructure.SqlServer\Dfe.Spi.Registry.Infrastructure.SqlServer.csproj", "{2424C5D9-F871-4467-9007-F98F1C0B8F7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -105,6 +107,10 @@ Global
 		{7B83A09A-4373-478E-9273-5B943C61990C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7B83A09A-4373-478E-9273-5B943C61990C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7B83A09A-4373-478E-9273-5B943C61990C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2424C5D9-F871-4467-9007-F98F1C0B8F7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2424C5D9-F871-4467-9007-F98F1C0B8F7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2424C5D9-F871-4467-9007-F98F1C0B8F7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2424C5D9-F871-4467-9007-F98F1C0B8F7C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{043D77D1-345F-450B-AD95-678D5D3B14CA} = {B2E320E0-3554-4B75-B661-72BC04A7B05C}

@@ -6,6 +6,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj" />
+      <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.SqlServer\Dfe.Spi.Registry.Infrastructure.SqlServer.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -95,7 +95,8 @@ namespace Dfe.Spi.Registry.Functions
 
         private void AddManagers(IServiceCollection services)
         {
-            services.AddScoped<IEntityManager, EntityManager>();
+            // services.AddScoped<IEntityManager, EntityManager>();
+            services.AddScoped<IEntityManager, SpikeEntityManager>();
             services.AddScoped<ILearningProviderManager, LearningProviderManager>();
             services.AddScoped<IManagementGroupManager, ManagementGroupManager>();
             

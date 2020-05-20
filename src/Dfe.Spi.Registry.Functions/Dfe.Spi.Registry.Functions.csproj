@@ -34,4 +34,10 @@
       <None Remove="Schemas\search-entities-body.json" />
       <EmbeddedResource Include="Schemas\search-entities-body.json" />
     </ItemGroup>
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+        <Copy SourceFiles="$(OutDir)$(ProjectName).deps.json" DestinationFiles="$(OutDir)/bin/function.deps.json" />
+    </Target>
+    <Target Name="PostPublish" BeforeTargets="Publish">
+        <Copy SourceFiles="$(PublishDir)$(ProjectName).deps.json" DestinationFiles="$(PublishDir)/bin/function.deps.json" />
+    </Target>
 </Project>
