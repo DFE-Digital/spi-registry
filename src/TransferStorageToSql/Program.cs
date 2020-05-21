@@ -13,10 +13,38 @@ namespace TransferStorageToSql
         private static async Task Run(CommandLineOptions options, CancellationToken cancellationToken = default)
         {
             var storageReader = new StorageReader(options.StorageConnectionString, _logger);
-            using var sqlWriter = new SqlWriter(options.SqlConnectionString, _logger);
             
-            await TransferEntities(storageReader, sqlWriter, cancellationToken);
-            await TransferLinks(storageReader, sqlWriter, cancellationToken);
+            using var bulkSqlWriter = new BulkSqlWriter(options.SqlConnectionString, _logger);
+
+            var entities = await ReadEntitiesFromStorage(storageReader, cancellationToken);
+            var links = await ReadLinksFromStorage(storageReader, cancellationToken);
+            await WriteToSql(bulkSqlWriter, entities, links, cancellationToken);
+
+            // using var sqlWriter = new SqlWriter(options.SqlConnectionString, _logger);
+
+            // await TransferEntities(storageReader, sqlWriter, cancellationToken);
+            // await TransferLinks(storageReader, sqlWriter, cancellationToken);
+        }
+
+        static async Task<Entity[]> ReadEntitiesFromStorage(StorageReader storageReader, CancellationToken cancellationToken)
+        {
+            _logger.Info("Reading entities...");
+            var entities = await storageReader.ReadAllEntitiesAsync(cancellationToken);
+            _logger.Info($"Read {entities.Length} entities");
+            return entities;
+        }
+        static async Task<Link[]> ReadLinksFromStorage(StorageReader storageReader, CancellationToken cancellationToken)
+        {
+            _logger.Info("Reading links...");
+            var links = await storageReader.ReadAllLinks(cancellationToken);
+            _logger.Info($"Read {links.Length} links");
+            return links;
+        }
+
+        static async Task WriteToSql(BulkSqlWriter bulkSqlWriter, Entity[] entities, Link[] links, CancellationToken cancellationToken)
+        {
+            _logger.Info("Writing to SQL...");
+            await bulkSqlWriter.StoreAsync(entities, links, cancellationToken);
         }
 
         static async Task TransferEntities(StorageReader storageReader, SqlWriter sqlWriter, CancellationToken cancellationToken)
