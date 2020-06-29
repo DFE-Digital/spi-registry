@@ -9,7 +9,7 @@ namespace Dfe.Spi.Registry.Functions.HealthCheck
     public class Heartbeat
     {
         [FunctionName("Heartbeat")]
-        public async Task<IActionResult> RunAsync(
+        public IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)]
             HttpRequest req)
         {

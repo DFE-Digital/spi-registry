@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AutoFixture" Version="4.11.0" />
+        <PackageReference Include="AutoFixture.NUnit3" Version="4.11.0" />
+        <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.0" />
+        <PackageReference Include="Dfe.Spi.Common.UnitTesting" Version="1.0.7" />
+        <PackageReference Include="Dfe.Spi.Common.WellKnownIdentifiers" Version="1.2.1" />
+        <PackageReference Include="Moq" Version="4.14.4" />
+        <PackageReference Include="nunit" Version="3.12.0" />
+        <PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Dfe.Spi.Registry.Application\Dfe.Spi.Registry.Application.csproj" />
+      <ProjectReference Include="..\Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Moq, Version=4.14.0.0, Culture=neutral, PublicKeyToken=69f491c39445e920">
+        <HintPath>..\..\..\..\..\.nuget\packages\moq\4.14.4\lib\netstandard2.0\Moq.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+</Project>

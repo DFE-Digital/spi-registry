@@ -21,6 +21,8 @@
         </None>
     </ItemGroup>
     <ItemGroup>
+      <ProjectReference Include="..\Dfe.Spi.Registry.Application\Dfe.Spi.Registry.Application.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj" />
+      <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.AzureStorage\Dfe.Spi.Registry.Infrastructure.AzureStorage.csproj" />
     </ItemGroup>
 </Project>

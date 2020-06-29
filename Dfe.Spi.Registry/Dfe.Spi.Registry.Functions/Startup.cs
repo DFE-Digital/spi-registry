@@ -4,8 +4,11 @@ using Dfe.Spi.Common.Http.Server;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging;
 using Dfe.Spi.Common.Logging.Definitions;
+using Dfe.Spi.Registry.Application.Sync;
 using Dfe.Spi.Registry.Domain.Configuration;
+using Dfe.Spi.Registry.Domain.Sync;
 using Dfe.Spi.Registry.Functions;
+using Dfe.Spi.Registry.Infrastructure.AzureStorage.Sync;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
@@ -33,6 +36,7 @@ namespace Dfe.Spi.Registry.Functions
             
             AddConfiguration(services, rawConfiguration);
             AddLogging(services);
+            AddSyncing(services);
         }
 
         private void AddConfiguration(IServiceCollection services, IConfigurationRoot rawConfiguration)
@@ -42,6 +46,7 @@ namespace Dfe.Spi.Registry.Functions
             var configuration = new RegistryConfiguration();
             rawConfiguration.Bind(configuration);
             services.AddSingleton(configuration);
+            services.AddSingleton(configuration.Sync);
         }
 
         private void AddLogging(IServiceCollection services)
@@ -54,6 +59,13 @@ namespace Dfe.Spi.Registry.Functions
             services.AddScoped<ISpiExecutionContextManager>((provider) =>
                 (ISpiExecutionContextManager) provider.GetService(typeof(IHttpSpiExecutionContextManager)));
             services.AddScoped<ILoggerWrapper, LoggerWrapper>();
+        }
+
+        private void AddSyncing(IServiceCollection services)
+        {
+            services
+                .AddScoped<ISyncQueue, StorageQueueSyncQueue>()
+                .AddScoped<ISyncManager, SyncManager>();
         }
     }
 }
