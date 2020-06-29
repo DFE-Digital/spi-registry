@@ -182,6 +182,7 @@ namespace Dfe.Spi.Registry.Application
         private static readonly DataOperator[] StringOperators = new[]
         {
             DataOperator.Equals,
+            DataOperator.In,
             DataOperator.IsNull,
             DataOperator.IsNotNull,
         };

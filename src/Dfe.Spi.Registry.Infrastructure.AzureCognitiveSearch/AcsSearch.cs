@@ -124,17 +124,28 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureCognitiveSearch
 
         private void AddInFilter(SearchFieldDefinition field, string value)
         {
-            
             var values = value.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim());
-            var conditionValue = values.Aggregate((x, y) => $"{x},{y}");
-
-            if (field.IsArray)
+            var fieldName = field.IsArray ? "x" : field.Name;
+            string condition;
+            if (field.DataType == typeof(long) || field.DataType == typeof(int))
             {
-                AppendFilter($"{field.Name}/any(x: search.in(x, '{FormatStringValueForFilter(conditionValue)}', ','))");
+                condition = values
+                    .Select(v => $"{fieldName} eq {v}")
+                    .Aggregate((x, y) => $"{x} or {y}");
             }
             else
             {
-                AppendFilter($"search.in({field.Name}, '{FormatStringValueForFilter(conditionValue)}', ',')");
+                var conditionValue = values.Aggregate((x, y) => $"{x},{y}");
+                condition = $"search.in({fieldName}, '{FormatStringValueForFilter(conditionValue)}', ',')";
+            }
+
+            if (field.IsArray)
+            {
+                AppendFilter($"{field.Name}/any(x: {condition})");
+            }
+            else
+            {
+                AppendFilter(condition);
             }
         }
 
