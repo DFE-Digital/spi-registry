@@ -169,7 +169,6 @@ namespace Dfe.Spi.Registry.Application.UnitTests
             Assert.IsTrue(actual.Errors[0].StartsWith("group 0, filter 0 has invalid Field (NoSuchField). Valid values are"));
         }
         
-        [TestCase("Urn", DataOperator.In)]
         [TestCase("Type", DataOperator.Contains)]
         public void ThenItShouldReturnValidationFailureIfRequestHasFilterWithInvalidOperatorForField(string fieldName, DataOperator @operator)
         {
