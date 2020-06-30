@@ -34,6 +34,30 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             await _container.UpsertItemAsync(registeredEntity, cancellationToken: cancellationToken);
         }
 
+        public async Task StoreAsync(RegisteredEntity[] registeredEntities, CancellationToken cancellationToken)
+        {
+            var partitionedEntities = registeredEntities
+                .GroupBy(e => e.Type)
+                .Select(g => g.ToArray())
+                .ToArray();
+            foreach (var partition in partitionedEntities)
+            {
+                var batch = _container.CreateTransactionalBatch(new PartitionKey(partition[0].Type));
+                foreach (var entity in partition)
+                {
+                    batch = batch.UpsertItem(entity);
+                }
+
+                using (var batchResponse = await batch.ExecuteAsync(cancellationToken))
+                {
+                    if (!batchResponse.IsSuccessStatusCode)
+                    {
+                        throw new Exception($"Failed to store batch of entities in {partition[0].Type} (Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
+                    }
+                }
+            }
+        }
+
         public async Task<RegisteredEntity> RetrieveAsync(string entityType, string sourceSystemName, string sourceSystemId, DateTime pointInTime, CancellationToken cancellationToken)
         {
             var query = new QueryDefinition(

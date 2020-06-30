@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
@@ -138,10 +137,12 @@ namespace Dfe.Spi.Registry.Application.Sync
             
             _logger.Info($"Entity {updatedEntity.Id} ({updatedEntity.Entities[0]}) on {updatedEntity.ValidFrom} has changed since {existingEntity.ValidFrom}. Updating");
 
-            // TODO: Update in batch?
             existingEntity.ValidTo = updatedEntity.ValidFrom;
-            await _repository.StoreAsync(updatedEntity, cancellationToken);
-            await _repository.StoreAsync(existingEntity, cancellationToken);
+            await _repository.StoreAsync(new[]
+            {
+                existingEntity,
+                updatedEntity,
+            }, cancellationToken);
         }
 
         private bool AreSame(Entity entity1, Entity entity2)
