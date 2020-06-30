@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Registry.Domain;
@@ -30,6 +32,34 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
         public async Task StoreAsync(RegisteredEntity registeredEntity, CancellationToken cancellationToken)
         {
             await _container.UpsertItemAsync(registeredEntity, cancellationToken: cancellationToken);
+        }
+
+        public async Task<RegisteredEntity> RetrieveAsync(string entityType, string sourceSystemName, string sourceSystemId, DateTime pointInTime, CancellationToken cancellationToken)
+        {
+            var query = new QueryDefinition(
+                "SELECT * FROM c WHERE EXISTS (" +
+                "SELECT VALUE n FROM n IN c.entities " +
+                $"WHERE UPPER(c.type)='{entityType.ToUpper()}' AND UPPER(n.sourceSystemName)='{sourceSystemName.ToUpper()}' AND UPPER(n.sourceSystemId)='{sourceSystemId.ToUpper()}' " +
+                $"AND c.validFrom <= '{pointInTime.ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z' AND (IS_NULL(c.validTo) OR c.validTo > '{pointInTime.ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z'))");
+            var results = await RunQuery(query, cancellationToken);
+            return results.SingleOrDefault();
+        }
+        
+        
+        
+
+        private async Task<RegisteredEntity[]> RunQuery(QueryDefinition query, CancellationToken cancellationToken)
+        {
+            var iterator = _container.GetItemQueryIterator<RegisteredEntity>(query);
+            var results = new List<RegisteredEntity>();
+
+            while (iterator.HasMoreResults)
+            {
+                var batch = await iterator.ReadNextAsync(cancellationToken);
+                results.AddRange(batch);
+            }
+
+            return results.ToArray();
         }
     }
 }

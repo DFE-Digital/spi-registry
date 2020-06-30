@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
@@ -47,6 +48,15 @@ namespace Dfe.Spi.Registry.Application.Sync
 
         public async Task ProcessSyncQueueItemAsync(SyncQueueItem queueItem, CancellationToken cancellationToken)
         {
+            _logger.Debug($"Trying to find existing entity for {queueItem.Entity} at {queueItem.PointInTime}");
+            var existingEntity = await _repository.RetrieveAsync(
+                queueItem.Entity.EntityType, 
+                queueItem.Entity.SourceSystemName,
+                queueItem.Entity.SourceSystemId,
+                queueItem.PointInTime, 
+                cancellationToken);
+            
+            _logger.Debug($"Preparing updated version of {queueItem.Entity} at {queueItem.PointInTime}");
             var registeredEntity = new RegisteredEntity
             {
                 Id = Guid.NewGuid().ToString().ToLower(),
@@ -55,7 +65,9 @@ namespace Dfe.Spi.Registry.Application.Sync
                 Entities = new[] {queueItem.Entity},
                 Links = new Link[0],
             };
-            await _repository.StoreAsync(registeredEntity, cancellationToken);
+
+            await ProcessEntityChangesAsync(existingEntity, registeredEntity, cancellationToken);
+            _logger.Info($"Finished processing entity {queueItem.Entity} at {queueItem.PointInTime}");
         }
 
         private Entity MapEventToEntity<T>(SyncEntityEvent<T> @event, string sourceSystemName) where T : EntityBase
@@ -106,6 +118,52 @@ namespace Dfe.Spi.Registry.Application.Sync
             }
 
             throw new Exception($"Unprocessable event for type {typeof(T)}");
+        }
+
+        private async Task ProcessEntityChangesAsync(RegisteredEntity existingEntity, RegisteredEntity updatedEntity, CancellationToken cancellationToken)
+        {
+            if (existingEntity == null)
+            {
+                _logger.Info($"Entity {updatedEntity.Id} ({updatedEntity.Entities[0]}) has not been seen before {updatedEntity.ValidFrom}. Creating new entry");
+                await _repository.StoreAsync(updatedEntity, cancellationToken);
+                return;
+            }
+            
+            // For now, assume only one entity. Will need revisiting when matching put in
+            if (AreSame(existingEntity.Entities[0], updatedEntity.Entities[0]))
+            {
+                _logger.Info($"Entity {updatedEntity.Id} ({updatedEntity.Entities[0]}) on {updatedEntity.ValidFrom} has not changed since {existingEntity.ValidFrom}. No further action to take");
+                return;
+            }
+            
+            _logger.Info($"Entity {updatedEntity.Id} ({updatedEntity.Entities[0]}) on {updatedEntity.ValidFrom} has changed since {existingEntity.ValidFrom}. Updating");
+
+            // TODO: Update in batch?
+            existingEntity.ValidTo = updatedEntity.ValidFrom;
+            await _repository.StoreAsync(updatedEntity, cancellationToken);
+            await _repository.StoreAsync(existingEntity, cancellationToken);
+        }
+
+        private bool AreSame(Entity entity1, Entity entity2)
+        {
+            return entity1.Name == entity2.Name &&
+                   entity1.Type == entity2.Type &&
+                   entity1.SubType == entity2.SubType &&
+                   entity1.Status == entity2.Status &&
+                   entity1.OpenDate == entity2.OpenDate &&
+                   entity1.CloseDate == entity2.CloseDate &&
+                   entity1.Urn == entity2.Urn &&
+                   entity1.Ukprn == entity2.Ukprn &&
+                   entity1.Uprn == entity2.Uprn &&
+                   entity1.CompaniesHouseNumber == entity2.CompaniesHouseNumber &&
+                   entity1.CharitiesCommissionNumber == entity2.CharitiesCommissionNumber &&
+                   entity1.AcademyTrustCode == entity2.AcademyTrustCode &&
+                   entity1.DfeNumber == entity2.DfeNumber &&
+                   entity1.LocalAuthorityCode == entity2.LocalAuthorityCode &&
+                   entity1.ManagementGroupType == entity2.ManagementGroupType &&
+                   entity1.ManagementGroupId == entity2.ManagementGroupId &&
+                   entity1.ManagementGroupUkprn == entity2.ManagementGroupUkprn &&
+                   entity1.ManagementGroupCompaniesHouseNumber == entity2.ManagementGroupCompaniesHouseNumber;
         }
     }
 }
