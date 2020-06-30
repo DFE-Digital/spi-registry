@@ -9,6 +9,7 @@
         <PackageReference Include="Dfe.Spi.Common.Models" Version="1.1.0" />
         <PackageReference Include="Dfe.Spi.Models" Version="2.1.0" />
         <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.0.0" />
+        <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.4" />
         <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.7" />
     </ItemGroup>
     <ItemGroup>
@@ -24,5 +25,6 @@
       <ProjectReference Include="..\Dfe.Spi.Registry.Application\Dfe.Spi.Registry.Application.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.AzureStorage\Dfe.Spi.Registry.Infrastructure.AzureStorage.csproj" />
+      <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.CosmosDb\Dfe.Spi.Registry.Infrastructure.CosmosDb.csproj" />
     </ItemGroup>
 </Project>

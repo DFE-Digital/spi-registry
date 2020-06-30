@@ -1,5 +1,3 @@
-using System;
-
 namespace Dfe.Spi.Registry.Domain
 {
     public static class QueueNames

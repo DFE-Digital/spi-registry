@@ -5,6 +5,7 @@ using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.WellKnownIdentifiers;
 using Dfe.Spi.Models.Entities;
 using Dfe.Spi.Registry.Domain;
+using Dfe.Spi.Registry.Domain.Data;
 using Dfe.Spi.Registry.Domain.Sync;
 
 namespace Dfe.Spi.Registry.Application.Sync
@@ -12,18 +13,23 @@ namespace Dfe.Spi.Registry.Application.Sync
     public interface ISyncManager
     {
         Task ReceiveSyncEntityAsync<T>(SyncEntityEvent<T> @event, string sourceSystemName, CancellationToken cancellationToken) where T: Models.Entities.EntityBase;
+
+        Task ProcessSyncQueueItemAsync(SyncQueueItem queueItem, CancellationToken cancellationToken);
     }
     
     public class SyncManager : ISyncManager
     {
         private readonly ISyncQueue _syncQueue;
+        private readonly IRepository _repository;
         private readonly ILoggerWrapper _logger;
 
         public SyncManager(
             ISyncQueue syncQueue,
+            IRepository repository,
             ILoggerWrapper logger)
         {
             _syncQueue = syncQueue;
+            _repository = repository;
             _logger = logger;
         }
         
@@ -37,6 +43,19 @@ namespace Dfe.Spi.Registry.Application.Sync
             };
 
             await _syncQueue.EnqueueEntityForSyncAsync(queueItem, cancellationToken);
+        }
+
+        public async Task ProcessSyncQueueItemAsync(SyncQueueItem queueItem, CancellationToken cancellationToken)
+        {
+            var registeredEntity = new RegisteredEntity
+            {
+                Id = Guid.NewGuid().ToString().ToLower(),
+                Type = queueItem.Entity.EntityType,
+                ValidFrom = queueItem.PointInTime,
+                Entities = new[] {queueItem.Entity},
+                Links = new Link[0],
+            };
+            await _repository.StoreAsync(registeredEntity, cancellationToken);
         }
 
         private Entity MapEventToEntity<T>(SyncEntityEvent<T> @event, string sourceSystemName) where T : EntityBase

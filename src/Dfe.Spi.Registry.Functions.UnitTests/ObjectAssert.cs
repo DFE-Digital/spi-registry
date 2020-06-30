@@ -1,5 +1,3 @@
-using System;
-
 namespace Dfe.Spi.Registry.Functions.UnitTests
 {
     public static class ObjectAssert

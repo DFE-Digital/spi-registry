@@ -1,15 +1,13 @@
-using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
-using AutoFixture.Kernel;
 using Dfe.Spi.Common.Logging.Definitions;
-using Dfe.Spi.Common.UnitTesting.Fixtures;
 using Dfe.Spi.Common.WellKnownIdentifiers;
 using Dfe.Spi.Models.Entities;
 using Dfe.Spi.Registry.Application.Sync;
 using Dfe.Spi.Registry.Domain;
+using Dfe.Spi.Registry.Domain.Data;
 using Dfe.Spi.Registry.Domain.Sync;
 using Moq;
 using NUnit.Framework;
@@ -20,6 +18,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
     {
         private Fixture _fixture;
         private Mock<ISyncQueue> _syncQueueMock;
+        private Mock<IRepository> _repositoryMock;
         private Mock<ILoggerWrapper> _loggerMock;
         private SyncManager _syncManager;
         private CancellationToken _cancellationToken;
@@ -32,11 +31,14 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
             _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
             
             _syncQueueMock = new Mock<ISyncQueue>();
+            
+            _repositoryMock = new Mock<IRepository>();
 
             _loggerMock = new Mock<ILoggerWrapper>();
 
             _syncManager = new SyncManager(
                 _syncQueueMock.Object,
+                _repositoryMock.Object,
                 _loggerMock.Object);
 
             _cancellationToken = new CancellationToken();

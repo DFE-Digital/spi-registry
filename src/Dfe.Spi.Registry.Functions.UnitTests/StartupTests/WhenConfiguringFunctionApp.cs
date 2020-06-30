@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using Dfe.Spi.Registry.Functions.HealthCheck;
-using Dfe.Spi.Registry.Functions.Sync;
+using System.Text;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Configuration;
@@ -54,6 +52,10 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.StartupTests
                 .AddInMemoryCollection(new[]
                 {
                     new KeyValuePair<string, string>("Sync:QueueConnectionString", "UseDevelopmentStorage=true"),
+                    new KeyValuePair<string, string>("Data:CosmosDbUri", "http://localhost:9876"),
+                    new KeyValuePair<string, string>("Data:CosmosDbKey", Convert.ToBase64String(Encoding.UTF8.GetBytes("NA"))),
+                    new KeyValuePair<string, string>("Data:DatabaseName", "Db01"),
+                    new KeyValuePair<string, string>("Data:ContainerName", "Ctr01"),
                 }).Build();
         }
 

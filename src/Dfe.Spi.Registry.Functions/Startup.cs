@@ -6,9 +6,11 @@ using Dfe.Spi.Common.Logging;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Application.Sync;
 using Dfe.Spi.Registry.Domain.Configuration;
+using Dfe.Spi.Registry.Domain.Data;
 using Dfe.Spi.Registry.Domain.Sync;
 using Dfe.Spi.Registry.Functions;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Sync;
+using Dfe.Spi.Registry.Infrastructure.CosmosDb;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
@@ -36,6 +38,7 @@ namespace Dfe.Spi.Registry.Functions
             
             AddConfiguration(services, rawConfiguration);
             AddLogging(services);
+            AddData(services);
             AddSyncing(services);
         }
 
@@ -47,6 +50,7 @@ namespace Dfe.Spi.Registry.Functions
             rawConfiguration.Bind(configuration);
             services.AddSingleton(configuration);
             services.AddSingleton(configuration.Sync);
+            services.AddSingleton(configuration.Data);
         }
 
         private void AddLogging(IServiceCollection services)
@@ -61,6 +65,12 @@ namespace Dfe.Spi.Registry.Functions
             services.AddScoped<ILoggerWrapper, LoggerWrapper>();
         }
 
+        private void AddData(IServiceCollection services)
+        {
+            services
+                .AddScoped<IRepository, CosmosDbRepository>();
+        }
+        
         private void AddSyncing(IServiceCollection services)
         {
             services

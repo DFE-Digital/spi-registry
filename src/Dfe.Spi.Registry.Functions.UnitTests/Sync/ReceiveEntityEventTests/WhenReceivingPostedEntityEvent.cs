@@ -42,13 +42,13 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.Sync.ReceiveEntityEventTests
         [Test]
         public async Task ThenItShouldSetExecutionContext()
         {
-            var request = (HttpRequest)HttpRequestBuilder
+            var request = (HttpRequest) HttpRequestBuilder
                 .CreateHttpRequest()
                 .WithJsonBody(new SyncEntityEvent<LearningProvider>());
-            
+
             await _function.RunAsync(request, EntityNameTranslator.LearningProviderPlural, "anything", _cancellationToken);
-            
-            _executionContextManagerMock.Verify(c=>c.SetContext(request.Headers),
+
+            _executionContextManagerMock.Verify(c => c.SetContext(request.Headers),
                 Times.Once);
         }
 
@@ -92,7 +92,7 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.Sync.ReceiveEntityEventTests
                 .WithJsonBody(new SyncEntityEvent<LearningProvider>());
 
             var actual = await _function.RunAsync(request, EntityNameTranslator.LearningProviderPlural, "anything", _cancellationToken);
-            
+
             Assert.IsInstanceOf<AcceptedResult>(actual);
         }
 
@@ -104,7 +104,7 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.Sync.ReceiveEntityEventTests
                 .WithJsonBody(new SyncEntityEvent<LearningProvider>());
 
             var actual = await _function.RunAsync(request, "bad-type", "anything", _cancellationToken);
-            
+
             Assert.IsInstanceOf<BadRequestResult>(actual);
         }
     }
