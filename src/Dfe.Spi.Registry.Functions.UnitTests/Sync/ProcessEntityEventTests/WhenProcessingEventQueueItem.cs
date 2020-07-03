@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AutoFixture.NUnit3;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
+using Dfe.Spi.Common.UnitTesting;
 using Dfe.Spi.Registry.Application.Sync;
 using Dfe.Spi.Registry.Domain.Sync;
 using Dfe.Spi.Registry.Functions.Sync;

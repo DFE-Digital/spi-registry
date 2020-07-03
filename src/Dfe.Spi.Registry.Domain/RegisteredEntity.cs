@@ -8,7 +8,7 @@ namespace Dfe.Spi.Registry.Domain
         public string Type { get; set; }
         public DateTime ValidFrom { get; set; }
         public DateTime? ValidTo { get; set; }
-        public Entity[] Entities { get; set; }
+        public LinkedEntity[] Entities { get; set; }
         public Link[] Links { get; set; }
     }
 }

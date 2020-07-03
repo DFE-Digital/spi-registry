@@ -5,6 +5,7 @@ using AutoFixture;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.WellKnownIdentifiers;
 using Dfe.Spi.Models.Entities;
+using Dfe.Spi.Registry.Application.Matching;
 using Dfe.Spi.Registry.Application.Sync;
 using Dfe.Spi.Registry.Domain;
 using Dfe.Spi.Registry.Domain.Data;
@@ -19,6 +20,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
         private Fixture _fixture;
         private Mock<ISyncQueue> _syncQueueMock;
         private Mock<IRepository> _repositoryMock;
+        private Mock<IMatcher> _matcherMock;
         private Mock<ILoggerWrapper> _loggerMock;
         private SyncManager _syncManager;
         private CancellationToken _cancellationToken;
@@ -33,12 +35,15 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
             _syncQueueMock = new Mock<ISyncQueue>();
             
             _repositoryMock = new Mock<IRepository>();
+            
+            _matcherMock = new Mock<IMatcher>();
 
             _loggerMock = new Mock<ILoggerWrapper>();
 
             _syncManager = new SyncManager(
                 _syncQueueMock.Object,
                 _repositoryMock.Object,
+                _matcherMock.Object,
                 _loggerMock.Object);
 
             _cancellationToken = new CancellationToken();

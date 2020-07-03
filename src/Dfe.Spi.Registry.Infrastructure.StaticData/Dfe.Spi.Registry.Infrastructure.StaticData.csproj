@@ -5,7 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Dfe.Spi.Common.Models" Version="1.1.0" />
+      <ProjectReference Include="..\Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj" />
     </ItemGroup>
 
 </Project>

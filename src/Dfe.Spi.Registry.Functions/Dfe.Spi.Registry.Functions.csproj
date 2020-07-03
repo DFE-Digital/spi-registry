@@ -26,5 +26,6 @@
       <ProjectReference Include="..\Dfe.Spi.Registry.Domain\Dfe.Spi.Registry.Domain.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.AzureStorage\Dfe.Spi.Registry.Infrastructure.AzureStorage.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.CosmosDb\Dfe.Spi.Registry.Infrastructure.CosmosDb.csproj" />
+      <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.StaticData\Dfe.Spi.Registry.Infrastructure.StaticData.csproj" />
     </ItemGroup>
 </Project>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dfe.Spi.Common.Models;
 using Dfe.Spi.Registry.Domain;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Data;
@@ -34,25 +35,35 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             await _container.UpsertItemAsync(registeredEntity, cancellationToken: cancellationToken);
         }
 
-        public async Task StoreAsync(RegisteredEntity[] registeredEntities, CancellationToken cancellationToken)
+        public async Task StoreAsync(RegisteredEntity[] registeredEntitiesToUpsert, RegisteredEntity[] registeredEntitiesToDelete, CancellationToken cancellationToken)
         {
-            var partitionedEntities = registeredEntities
-                .GroupBy(e => e.Type)
+            var joinedEntities =
+                registeredEntitiesToUpsert.Select(x => new {ToDelete = false, Entity = x})
+                    .Concat(registeredEntitiesToDelete.Select(x => new {ToDelete = true, Entity = x}));
+            var partitionedEntities = joinedEntities
+                .GroupBy(e => e.Entity.Type)
                 .Select(g => g.ToArray())
                 .ToArray();
             foreach (var partition in partitionedEntities)
             {
-                var batch = _container.CreateTransactionalBatch(new PartitionKey(partition[0].Type));
-                foreach (var entity in partition)
+                var batch = _container.CreateTransactionalBatch(new PartitionKey(partition[0].Entity.Type));
+                foreach (var update in partition)
                 {
-                    batch = batch.UpsertItem(entity);
+                    if (update.ToDelete)
+                    {
+                        batch = batch.DeleteItem(update.Entity.Id);
+                    }
+                    else
+                    {
+                        batch = batch.UpsertItem(update.Entity);
+                    }
                 }
 
                 using (var batchResponse = await batch.ExecuteAsync(cancellationToken))
                 {
                     if (!batchResponse.IsSuccessStatusCode)
                     {
-                        throw new Exception($"Failed to store batch of entities in {partition[0].Type} (Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
+                        throw new Exception($"Failed to store batch of entities in {partition[0].Entity.Type} (Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
                     }
                 }
             }
@@ -60,17 +71,39 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 
         public async Task<RegisteredEntity> RetrieveAsync(string entityType, string sourceSystemName, string sourceSystemId, DateTime pointInTime, CancellationToken cancellationToken)
         {
-            var query = new QueryDefinition(
-                "SELECT * FROM c WHERE EXISTS (" +
-                "SELECT VALUE n FROM n IN c.entities " +
-                $"WHERE UPPER(c.type)='{entityType.ToUpper()}' AND UPPER(n.sourceSystemName)='{sourceSystemName.ToUpper()}' AND UPPER(n.sourceSystemId)='{sourceSystemId.ToUpper()}' " +
-                $"AND c.validFrom <= '{pointInTime.ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z' AND (IS_NULL(c.validTo) OR c.validTo > '{pointInTime.ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z'))");
-            var results = await RunQuery(query, cancellationToken);
+            var query = new CosmosQuery(CosmosCombinationOperator.And)
+                .AddRegisteredEntityCondition("type", DataOperator.Equals, entityType)
+                .AddEntityCondition("sourceSystemName", DataOperator.Equals, sourceSystemName)
+                .AddEntityCondition("sourceSystemId", DataOperator.Equals, sourceSystemId)
+                .AddPointInTimeConditions(pointInTime)
+                .ToString();
+            var queryDefinition = new QueryDefinition(query);
+            var results = await RunQuery(queryDefinition, cancellationToken);
             return results.SingleOrDefault();
         }
-        
-        
-        
+
+        public async Task<RegisteredEntity[]> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken)
+        {
+            var query = new CosmosQuery(request.CombinationOperator.Equals("or") ? CosmosCombinationOperator.Or : CosmosCombinationOperator.And)
+                .AddRegisteredEntityCondition("type", DataOperator.Equals, entityType)
+                .AddPointInTimeConditions(pointInTime);
+            foreach (var group in request.Groups)
+            {
+                var groupQuery = new CosmosQuery(group.CombinationOperator.Equals("or") ? CosmosCombinationOperator.Or : CosmosCombinationOperator.And);
+                
+                foreach (var filter in group.Filter)
+                {
+                    groupQuery.AddEntityCondition(filter.Field, filter.Operator, filter.Value);
+                }
+
+                query.AddGroup(groupQuery);
+            }
+            
+            var queryDefinition = new QueryDefinition(query.ToString());
+            var results = await RunQuery(queryDefinition, cancellationToken);
+            return results;
+        }
+
 
         private async Task<RegisteredEntity[]> RunQuery(QueryDefinition query, CancellationToken cancellationToken)
         {

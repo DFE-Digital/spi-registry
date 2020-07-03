@@ -2,6 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
+using Dfe.Spi.Common.UnitTesting;
 using Dfe.Spi.Common.UnitTesting.Fixtures;
 using Dfe.Spi.Models.Entities;
 using Dfe.Spi.Registry.Application.Sync;

@@ -2,7 +2,7 @@ using System;
 
 namespace Dfe.Spi.Registry.Domain
 {
-    public class Link : EntityPointer
+    public class LinkedEntity : Entity
     {
         public string LinkType { get; set; }
 
@@ -10,6 +10,6 @@ namespace Dfe.Spi.Registry.Domain
 
         public string LinkedReason { get; set; }
         
-        public DateTime LinkedAt { get; set; }
+        public DateTime? LinkedAt { get; set; }
     }
 }

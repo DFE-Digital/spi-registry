@@ -4,13 +4,16 @@ using Dfe.Spi.Common.Http.Server;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging;
 using Dfe.Spi.Common.Logging.Definitions;
+using Dfe.Spi.Registry.Application.Matching;
 using Dfe.Spi.Registry.Application.Sync;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Data;
+using Dfe.Spi.Registry.Domain.Matching;
 using Dfe.Spi.Registry.Domain.Sync;
 using Dfe.Spi.Registry.Functions;
 using Dfe.Spi.Registry.Infrastructure.AzureStorage.Sync;
 using Dfe.Spi.Registry.Infrastructure.CosmosDb;
+using Dfe.Spi.Registry.Infrastructure.StaticData.Matching;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
@@ -75,7 +78,9 @@ namespace Dfe.Spi.Registry.Functions
         {
             services
                 .AddScoped<ISyncQueue, StorageQueueSyncQueue>()
-                .AddScoped<ISyncManager, SyncManager>();
+                .AddScoped<ISyncManager, SyncManager>()
+                .AddScoped<IMatchingProfileRepository, StaticMatchingProfileRepository>()
+                .AddScoped<IMatcher, Matcher>();
         }
     }
 }
