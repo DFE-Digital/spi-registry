@@ -1,0 +1,75 @@
+{
+  "events": [
+    {
+      "name": "The only event",
+      "entityType": "learning-providers",
+      "sourceSystemName": "GIAS",
+      "payload": {
+        "details": {
+          "name": "Test school one",
+          "type": "LocalAuthorityMaintainedSchool",
+          "subType": "CommunitySchool",
+          "status": "Open",
+          "openDate": "2001-09-01T00:00:00",
+          "closeDate": null,
+          "urn": 123456,
+          "ukprn": 10010099,
+          "uprn": "12345678",
+          "companiesHouseNumber": null,
+          "charitiesCommissionNumber": null,
+          "academyTrustCode": null,
+          "dfeNumber": "826/1234",
+          "localAuthorityCode": "826",
+          "managementGroup": {
+            "type": "LocalAuthority",
+            "code": "LocalAuthority-826",
+            "identifier": "826",
+            "name": "Milton Keynes"
+          }
+        },
+        "pointInTime": "2020-01-01T00:00:00.000Z"
+      }
+    }
+  ],
+  "expectedEndState": [
+    {
+      "name": "Only entity result",
+      "entity": {
+        "type": "learning-provider",
+        "validFrom": "2020-01-01T00:00:00Z",
+        "validTo": null,
+        "entities": [
+          {
+            "linkType": null,
+            "linkedBy": null,
+            "linkedReason": null,
+            "linkedAt": null,
+            "name": "Test school one",
+            "type": "LocalAuthorityMaintainedSchool",
+            "subType": "CommunitySchool",
+            "status": "Open",
+            "openDate": "2001-09-01T00:00:00",
+            "closeDate": null,
+            "urn": 123456,
+            "ukprn": 10010099,
+            "uprn": "12345678",
+            "companiesHouseNumber": null,
+            "charitiesCommissionNumber": null,
+            "academyTrustCode": null,
+            "dfeNumber": "826/1234",
+            "localAuthorityCode": "826",
+            "managementGroupType": "LocalAuthority",
+            "managementGroupId": "826",
+            "managementGroupCode": "LocalAuthority-826",
+            "managementGroupUkprn": null,
+            "managementGroupCompaniesHouseNumber": null,
+            "entityType": "learning-provider",
+            "sourceSystemName": "GIAS",
+            "sourceSystemId": "123456"
+          }
+        ],
+        "links": []
+      }
+    }
+  ]
+}

@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Infrastruc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Infrastructure.StaticData", "Dfe.Spi.Registry.Infrastructure.StaticData\Dfe.Spi.Registry.Infrastructure.StaticData.csproj", "{96273231-6754-4219-ABC4-D9E291084E7A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.IntegrationTests", "Dfe.Spi.Registry.IntegrationTests\Dfe.Spi.Registry.IntegrationTests.csproj", "{34584C89-7D70-4657-8FCA-4386F3D5666E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -62,10 +64,15 @@ Global
 		{96273231-6754-4219-ABC4-D9E291084E7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{96273231-6754-4219-ABC4-D9E291084E7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96273231-6754-4219-ABC4-D9E291084E7A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34584C89-7D70-4657-8FCA-4386F3D5666E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34584C89-7D70-4657-8FCA-4386F3D5666E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34584C89-7D70-4657-8FCA-4386F3D5666E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34584C89-7D70-4657-8FCA-4386F3D5666E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5745BAAB-7EB5-4403-B670-D545CC60C638} = {DBE4D18B-6BAC-4EB8-86E7-3E7F531E403F}
 		{18A6967C-63CC-49C2-BD63-62F437D642C7} = {DBE4D18B-6BAC-4EB8-86E7-3E7F531E403F}
 		{CED49021-48B9-4216-A1E7-3C56AF979DD4} = {DBE4D18B-6BAC-4EB8-86E7-3E7F531E403F}
+		{34584C89-7D70-4657-8FCA-4386F3D5666E} = {DBE4D18B-6BAC-4EB8-86E7-3E7F531E403F}
 	EndGlobalSection
 EndGlobal
