@@ -35,7 +35,8 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
             _matcherMock.Setup(m => m.MatchAsync(It.IsAny<Entity>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new MatchResult
                 {
-                    Synonyms = new MatchResultItem[0],
+                    Synonyms = new MatchResultSynonym[0],
+                    Links = new MatchResultLink[0],
                 });
 
             _loggerMock = new Mock<ILoggerWrapper>();
@@ -116,7 +117,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                     },
                     Links = new Link[0],
                 });
-            
+
             await _syncManager.ProcessSyncQueueItemAsync(queueItem, _cancellationToken);
 
             _repositoryMock.Verify(r => r.StoreAsync(
@@ -136,9 +137,9 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
             _matcherMock.Setup(m => m.MatchAsync(It.IsAny<Entity>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new MatchResult
                 {
-                    Synonyms = new []
+                    Synonyms = new[]
                     {
-                        new MatchResultItem
+                        new MatchResultSynonym
                         {
                             MatchReason = "Matched for testing",
                             RegisteredEntity = new RegisteredEntity
@@ -146,15 +147,16 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                                 Id = "other-entity",
                                 Type = queueItem.Entity.EntityType,
                                 ValidFrom = queueItem.PointInTime,
-                                Entities = new []
+                                Entities = new[]
                                 {
                                     CloneLinkedEntity(synonymEntity)
                                 }
                             }
-                        }, 
+                        },
                     },
+                    Links = new MatchResultLink[0],
                 });
-            
+
             await _syncManager.ProcessSyncQueueItemAsync(queueItem, _cancellationToken);
 
             _repositoryMock.Verify(r => r.StoreAsync(
@@ -181,9 +183,9 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
             _matcherMock.Setup(m => m.MatchAsync(It.IsAny<Entity>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new MatchResult
                 {
-                    Synonyms = new []
+                    Synonyms = new[]
                     {
-                        new MatchResultItem
+                        new MatchResultSynonym
                         {
                             MatchReason = "Matched for testing",
                             RegisteredEntity = new RegisteredEntity
@@ -191,15 +193,16 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                                 Id = "other-entity",
                                 Type = queueItem.Entity.EntityType,
                                 ValidFrom = queueItem.PointInTime.AddDays(-1),
-                                Entities = new []
+                                Entities = new[]
                                 {
                                     CloneLinkedEntity(synonymEntity)
                                 }
                             }
-                        }, 
+                        },
                     },
+                    Links = new MatchResultLink[0],
                 });
-            
+
             await _syncManager.ProcessSyncQueueItemAsync(queueItem, _cancellationToken);
 
             _repositoryMock.Verify(r => r.StoreAsync(
@@ -218,9 +221,9 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
             _matcherMock.Setup(m => m.MatchAsync(It.IsAny<Entity>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new MatchResult
                 {
-                    Synonyms = new []
+                    Synonyms = new[]
                     {
-                        new MatchResultItem
+                        new MatchResultSynonym
                         {
                             MatchReason = "Matched for testing",
                             RegisteredEntity = new RegisteredEntity
@@ -228,15 +231,16 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                                 Id = "other-entity",
                                 Type = queueItem.Entity.EntityType,
                                 ValidFrom = queueItem.PointInTime,
-                                Entities = new []
+                                Entities = new[]
                                 {
                                     CloneLinkedEntity(synonymEntity)
                                 }
                             }
-                        }, 
+                        },
                     },
+                    Links = new MatchResultLink[0],
                 });
-            
+
             await _syncManager.ProcessSyncQueueItemAsync(queueItem, _cancellationToken);
 
             _repositoryMock.Verify(r => r.StoreAsync(
@@ -247,6 +251,123 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                         entitiesToDelete.Any(x => x.Id == "other-entity")),
                     _cancellationToken),
                 Times.Once);
+        }
+
+        [Test, AutoData]
+        public async Task ThenItShouldStoreNewVersionOfEntitiesThatAreNewlyLinked(SyncQueueItem queueItem, RegisteredEntity linkedEntity)
+        {
+            _matcherMock.Setup(m => m.MatchAsync(It.IsAny<Entity>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    new MatchResult
+                    {
+                        Synonyms = new MatchResultSynonym[0],
+                        Links = new[]
+                        {
+                            new MatchResultLink
+                            {
+                                RegisteredEntity = linkedEntity,
+                                Entity = linkedEntity.Entities[0],
+                                LinkType = "test",
+                                MatchReason = "Linked for testing",
+                            },
+                        },
+                    });
+
+            await _syncManager.ProcessSyncQueueItemAsync(queueItem, _cancellationToken);
+
+            _repositoryMock.Verify(r => r.StoreAsync(
+                    It.Is<RegisteredEntity[]>(entitiesToUpdate =>
+                        entitiesToUpdate.Count(update => update.Entities.Any(entity => ObjectAssert.AreEqual(queueItem.Entity, entity))) == 1 &&
+                        entitiesToUpdate.Count(update => AreEqual(linkedEntity.Entities, update.Entities) && update.Id != linkedEntity.Id) == 1 &&
+                        entitiesToUpdate.Count(update => update.Links.Count(link => link.LinkType == "test") == 1) == 2),
+                    It.IsAny<RegisteredEntity[]>(),
+                    _cancellationToken),
+                Times.Once);
+        }
+
+        [Test, AutoData]
+        public async Task ThenItShouldSetValidToOfLinkedEntityIfValidFromBeforePointInTime(SyncQueueItem queueItem, RegisteredEntity linkedEntity)
+        {
+            linkedEntity.ValidFrom = queueItem.PointInTime.AddDays(-1);
+            _matcherMock.Setup(m => m.MatchAsync(It.IsAny<Entity>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    new MatchResult
+                    {
+                        Synonyms = new MatchResultSynonym[0],
+                        Links = new[]
+                        {
+                            new MatchResultLink
+                            {
+                                RegisteredEntity = linkedEntity,
+                                Entity = linkedEntity.Entities[0],
+                                LinkType = "test",
+                                MatchReason = "Linked for testing",
+                            },
+                        },
+                    });
+
+            await _syncManager.ProcessSyncQueueItemAsync(queueItem, _cancellationToken);
+
+            _repositoryMock.Verify(r => r.StoreAsync(
+                    It.Is<RegisteredEntity[]>(entitiesToUpdate =>
+                        entitiesToUpdate.SingleOrDefault(update => update.Id == linkedEntity.Id).ValidTo == queueItem.PointInTime),
+                    It.IsAny<RegisteredEntity[]>(),
+                    _cancellationToken),
+                Times.Once);
+        }
+
+        [Test, AutoData]
+        public async Task ThenItShouldDeleteLinkedEntityIfValidFromSameAsPointInTime(SyncQueueItem queueItem, RegisteredEntity linkedEntity)
+        {
+            linkedEntity.ValidFrom = queueItem.PointInTime;
+            _matcherMock.Setup(m => m.MatchAsync(It.IsAny<Entity>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    new MatchResult
+                    {
+                        Synonyms = new MatchResultSynonym[0],
+                        Links = new[]
+                        {
+                            new MatchResultLink
+                            {
+                                RegisteredEntity = linkedEntity,
+                                Entity = linkedEntity.Entities[0],
+                                LinkType = "test",
+                                MatchReason = "Linked for testing",
+                            },
+                        },
+                    });
+
+            await _syncManager.ProcessSyncQueueItemAsync(queueItem, _cancellationToken);
+
+            _repositoryMock.Verify(r => r.StoreAsync(
+                    It.IsAny<RegisteredEntity[]>(),
+                    It.Is<RegisteredEntity[]>(entitiesToDelete =>
+                        entitiesToDelete.Count(update => update.Id == linkedEntity.Id) == 1),
+                    _cancellationToken),
+                Times.Once);
+        }
+
+        private static bool AreEqual<T>(T[] expected, T[] actual)
+        {
+            if (expected == null && actual == null)
+            {
+                return true;
+            }
+            
+            if (expected?.Length != actual?.Length)
+            {
+                return false;
+            }
+            
+            for (var i = 0; i < expected.Length; i++)
+            {
+                if (!ObjectAssert.AreEqual(expected[i], actual[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static LinkedEntity CloneLinkedEntity(Entity linkedEntity, string newName = null)

@@ -152,6 +152,8 @@ namespace Dfe.Spi.Registry.Application.Sync
         private RegisteredEntity GetRegisteredEntityForPointInTime(Entity entity, DateTime pointInTime, MatchResult matchResult)
         {
             _logger.Debug($"Preparing updated version of {entity} at {pointInTime}");
+            
+            // Get entities
             var entities = new List<LinkedEntity>(new[] {MapEntityToLinkedEntity(entity)});
             if (matchResult.Synonyms.Length > 0)
             {
@@ -175,14 +177,31 @@ namespace Dfe.Spi.Registry.Application.Sync
                     }
                 }
             }
+            
+            // Get links
+            var links = new List<Link>();
+            foreach (var link in matchResult.Links)
+            {
+                links.Add(new Link
+                {
+                    EntityType = link.Entity.EntityType,
+                    SourceSystemName =  link.Entity.SourceSystemName,
+                    SourceSystemId =  link.Entity.SourceSystemId,
+                    LinkedAt =  DateTime.UtcNow,
+                    LinkedBy = "Matcher",
+                    LinkedReason = link.MatchReason,
+                    LinkType = link.LinkType,
+                });
+            }
 
+            // Put it together
             return new RegisteredEntity
             {
                 Id = Guid.NewGuid().ToString().ToLower(),
                 Type = entity.EntityType,
                 ValidFrom = pointInTime,
                 Entities = entities.ToArray(),
-                Links = new Link[0],
+                Links = links.ToArray(),
             };
         }
 
@@ -215,21 +234,51 @@ namespace Dfe.Spi.Registry.Application.Sync
             
             if (updates.Count > 0)
             {
-                if (matchResult.Synonyms.Length > 0)
+                foreach (var synonym in matchResult.Synonyms)
                 {
-                    foreach (var synonym in matchResult.Synonyms)
+                    if (synonym.RegisteredEntity.ValidFrom == updatedEntity.ValidFrom)
                     {
-                        if (synonym.RegisteredEntity.ValidFrom == updatedEntity.ValidFrom)
-                        {
-                            _logger.Info($"Adding {synonym.RegisteredEntity.Id} to be deleted");
-                            deletes.Add(synonym.RegisteredEntity);
-                        }
-                        else
-                        {
-                            _logger.Info($"Setting ValidTo of {synonym.RegisteredEntity.Id} to {updatedEntity.ValidFrom}");
-                            synonym.RegisteredEntity.ValidTo = updatedEntity.ValidFrom;
-                            updates.Add(synonym.RegisteredEntity);
-                        }
+                        _logger.Info($"Adding {synonym.RegisteredEntity.Id} to be deleted");
+                        deletes.Add(synonym.RegisteredEntity);
+                    }
+                    else
+                    {
+                        _logger.Info($"Setting ValidTo of {synonym.RegisteredEntity.Id} to {updatedEntity.ValidFrom}");
+                        synonym.RegisteredEntity.ValidTo = updatedEntity.ValidFrom;
+                        updates.Add(synonym.RegisteredEntity);
+                    }
+                }
+
+                foreach (var link in matchResult.Links)
+                {
+                    var linkFromUpdate = updatedEntity.Links.Single(updateLink =>
+                        updateLink.EntityType == link.Entity.EntityType &&
+                        updateLink.SourceSystemName == link.Entity.SourceSystemName &&
+                        updateLink.SourceSystemId == link.Entity.SourceSystemId);
+                    var newLink = new Link
+                    {
+                        EntityType = updatedEntity.Entities[0].EntityType,
+                        SourceSystemName = updatedEntity.Entities[0].SourceSystemName,
+                        SourceSystemId = updatedEntity.Entities[0].SourceSystemId,
+                        LinkedAt = linkFromUpdate.LinkedAt,
+                        LinkedBy = linkFromUpdate.LinkedBy,
+                        LinkedReason = linkFromUpdate.LinkedReason,
+                        LinkType = linkFromUpdate.LinkType,
+                    };
+
+                    var updatedLinkedEntity = CloneWithNewLink(link.RegisteredEntity, newLink, updatedEntity.ValidFrom);
+                    updates.Add(updatedLinkedEntity);
+                    
+                    if (link.RegisteredEntity.ValidFrom == updatedEntity.ValidFrom)
+                    {
+                        _logger.Info($"Adding {link.RegisteredEntity.Id} to be deleted");
+                        deletes.Add(link.RegisteredEntity);
+                    }
+                    else
+                    {
+                        _logger.Info($"Setting ValidTo of {link.RegisteredEntity.Id} to {updatedEntity.ValidFrom}");
+                        link.RegisteredEntity.ValidTo = updatedEntity.ValidFrom;
+                        updates.Add(link.RegisteredEntity);
                     }
                 }
                 
@@ -237,9 +286,25 @@ namespace Dfe.Spi.Registry.Application.Sync
                 await _repository.StoreAsync(updates.ToArray(), deletes.ToArray(), cancellationToken);
             }
         }
+        private RegisteredEntity CloneWithNewLink(RegisteredEntity registeredEntity, Link newLink, DateTime validFrom)
+        {
+            return new RegisteredEntity
+            {
+                Id = Guid.NewGuid().ToString(),
+                Type = registeredEntity.Type,
+                ValidFrom = validFrom,
+                Entities = registeredEntity.Entities,
+                Links = registeredEntity.Links.Concat(
+                    new[]
+                    {
+                        newLink
+                    }).ToArray(),
+            };
+        }
 
         private bool AreSame(RegisteredEntity registeredEntity1, RegisteredEntity registeredEntity2)
         {
+            // Compare entities
             if (registeredEntity1.Entities.Length != registeredEntity2.Entities.Length)
             {
                 _logger.Debug($"Entity {registeredEntity1.Id} and {registeredEntity2.Id} have a different number of entities");
@@ -264,7 +329,30 @@ namespace Dfe.Spi.Registry.Application.Sync
                     return false;
                 }
             }
+            
+            // Compare links
+            if (registeredEntity1.Links.Length != registeredEntity2.Links.Length)
+            {
+                _logger.Debug($"Entity {registeredEntity1.Id} and {registeredEntity2.Id} have a different number of links");
+                return false;
+            }
 
+            foreach (var link1 in registeredEntity1.Links)
+            {
+                var link2 = registeredEntity2.Links.SingleOrDefault(l2 =>
+                    l2.EntityType == link1.EntityType &&
+                    l2.SourceSystemName == link1.SourceSystemName &&
+                    l2.SourceSystemId == link1.SourceSystemId &&
+                    l2.LinkType == link1.LinkType);
+
+                if (link2 == null)
+                {
+                    _logger.Debug($"Entity {registeredEntity2.Id} is missing link {link1}");
+                    return false;
+                }
+            }
+
+            // They are the same
             return true;
         }
         private bool AreSame(Entity entity1, Entity entity2)
