@@ -8,5 +8,6 @@ namespace Dfe.Spi.Registry.Application.Matching
         public Entity Entity { get; set; }
         public string LinkType { get; set; }
         public string MatchReason { get; set; }
+        public bool LinkFromSynonym { get; set; }
     }
 }

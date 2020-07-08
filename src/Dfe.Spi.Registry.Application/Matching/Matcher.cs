@@ -34,34 +34,27 @@ namespace Dfe.Spi.Registry.Application.Matching
 
         public async Task<MatchResult> MatchAsync(Entity sourceEntity, DateTime pointInTime, CancellationToken cancellationToken)
         {
-            var synonyms = new List<MatchResultSynonym>();
-            var links = new List<MatchResultLink>();
-
             var profiles = await _matchingProfileRepository.GetMatchingProfilesForEntityTypeAsync(sourceEntity.EntityType, cancellationToken);
-            foreach (var profile in profiles)
-            {
-                var ensuredProfile = EnsureProfileSourceMatchesSourceEntityType(sourceEntity.EntityType, profile);
-                foreach (var ruleset in ensuredProfile.Rules)
-                {
-                    var matches = await FindMatches(sourceEntity, pointInTime, ruleset, profile, cancellationToken);
+            var synonyms = await GetSynonyms(sourceEntity, pointInTime, profiles, cancellationToken);
+            var links = await GetLinks(sourceEntity, pointInTime, profiles, cancellationToken);
 
-                    foreach (var match in matches)
+            var synonymousEntities = synonyms
+                .SelectMany(x => x.RegisteredEntity.Entities)
+                .Distinct(new LinkedEntityEqualityComparer())
+                .ToArray();
+            foreach (var synonymousEntity in synonymousEntities)
+            {
+                var synonymLinks = await GetLinks(synonymousEntity, pointInTime, profiles, cancellationToken);
+                foreach (var synonymLink in synonymLinks)
+                {
+                    if (!links.Any(l => l.LinkType == synonymLink.LinkType &&
+                                        l.Entity.EntityType == synonymLink.Entity.EntityType &&
+                                        l.Entity.SourceSystemName == synonymLink.Entity.SourceSystemName &&
+                                        l.Entity.SourceSystemId == synonymLink.Entity.SourceSystemId))
                     {
-                        if (profile.LinkType.Equals("synonym") && !synonyms.Any(x => x.RegisteredEntity.Id.Equals(match.RegisteredEntity.Id)))
-                        {
-                            synonyms.Add(match);
-                        }
-                        else if (!profile.LinkType.Equals("synonym"))
-                        {
-                            var matchedEntity = GetMatchingEntity(sourceEntity, match.RegisteredEntity, ruleset);
-                            links.Add(new MatchResultLink
-                            {
-                                RegisteredEntity = match.RegisteredEntity,
-                                Entity = matchedEntity,
-                                LinkType = profile.LinkType,
-                                MatchReason = match.MatchReason,
-                            });
-                        }
+                        synonymLink.LinkFromSynonym = true;
+                        synonymLink.LinkFromSynonym = true;
+                        links.Add(synonymLink);
                     }
                 }
             }
@@ -71,6 +64,60 @@ namespace Dfe.Spi.Registry.Application.Matching
                 Synonyms = synonyms.ToArray(),
                 Links = links.ToArray(),
             };
+        }
+
+        private async Task<List<MatchResultItem>> GetSynonyms(Entity sourceEntity, DateTime pointInTime, MatchingProfile[] profiles,
+            CancellationToken cancellationToken)
+        {
+            var synonyms = new List<MatchResultItem>();
+
+            var synonymProfiles = profiles.Where(p => p.LinkType.Equals("synonym", StringComparison.InvariantCultureIgnoreCase));
+            foreach (var profile in synonymProfiles)
+            {
+                var ensuredProfile = EnsureProfileSourceMatchesSourceEntityType(sourceEntity.EntityType, profile);
+                foreach (var ruleset in ensuredProfile.Rules)
+                {
+                    var matches = await FindMatches(sourceEntity, pointInTime, ruleset, profile, cancellationToken);
+                    foreach (var match in matches)
+                    {
+                        if (!synonyms.Any(x => x.RegisteredEntity.Id.Equals(match.RegisteredEntity.Id)))
+                        {
+                            synonyms.Add(match);
+                        }
+                    }
+                }
+            }
+
+            return synonyms;
+        }
+
+        private async Task<List<MatchResultLink>> GetLinks(Entity sourceEntity, DateTime pointInTime, MatchingProfile[] profiles,
+            CancellationToken cancellationToken)
+        {
+            var links = new List<MatchResultLink>();
+
+            var linkProfiles = profiles.Where(p => !p.LinkType.Equals("synonym", StringComparison.InvariantCultureIgnoreCase));
+            foreach (var profile in linkProfiles)
+            {
+                var ensuredProfile = EnsureProfileSourceMatchesSourceEntityType(sourceEntity.EntityType, profile);
+                foreach (var ruleset in ensuredProfile.Rules)
+                {
+                    var matches = await FindMatches(sourceEntity, pointInTime, ruleset, profile, cancellationToken);
+                    foreach (var match in matches)
+                    {
+                        var matchedEntity = GetMatchingEntity(sourceEntity, match.RegisteredEntity, ruleset);
+                        links.Add(new MatchResultLink
+                        {
+                            RegisteredEntity = match.RegisteredEntity,
+                            Entity = matchedEntity,
+                            LinkType = profile.LinkType,
+                            MatchReason = match.MatchReason,
+                        });
+                    }
+                }
+            }
+
+            return links;
         }
 
         private static MatchingProfile EnsureProfileSourceMatchesSourceEntityType(string sourceEntityType,
@@ -101,7 +148,7 @@ namespace Dfe.Spi.Registry.Application.Matching
             };
         }
 
-        private async Task<MatchResultSynonym[]> FindMatches(
+        private async Task<MatchResultItem[]> FindMatches(
             Entity sourceEntity,
             DateTime pointInTime,
             MatchingProfileRuleset ruleset,
@@ -133,7 +180,7 @@ namespace Dfe.Spi.Registry.Application.Matching
                         entity.SourceSystemName.Equals(sourceEntity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
                         entity.SourceSystemId.Equals(sourceEntity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase)))
                 .Select(candidate =>
-                    new MatchResultSynonym
+                    new MatchResultItem
                     {
                         RegisteredEntity = candidate,
                         MatchReason = $"Matched using ruleset {ruleset.Name} in profile {profile.Name}",
@@ -206,6 +253,8 @@ namespace Dfe.Spi.Registry.Application.Matching
                     return sourceEntity.ManagementGroupType;
                 case "managementgroupid":
                     return sourceEntity.ManagementGroupId;
+                case "managementgroupcode":
+                    return sourceEntity.ManagementGroupCode;
                 case "managementgroupukprn":
                     return sourceEntity.ManagementGroupUkprn?.ToString();
                 case "managementgroupcompanieshousenumber":
@@ -213,6 +262,27 @@ namespace Dfe.Spi.Registry.Application.Matching
             }
 
             return null;
+        }
+
+        private class LinkedEntityEqualityComparer : IEqualityComparer<LinkedEntity>
+        {
+            public bool Equals(LinkedEntity x, LinkedEntity y)
+            {
+                if (x == null && y == null)
+                {
+                    return true;
+                }
+
+                return x != null && y != null &&
+                       x.EntityType.Equals(y.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
+                       x.SourceSystemName.Equals(y.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                       x.SourceSystemId.Equals(y.SourceSystemId, StringComparison.InvariantCultureIgnoreCase);
+            }
+
+            public int GetHashCode(LinkedEntity obj)
+            {
+                return obj.ToString().GetHashCode();
+            }
         }
     }
 }

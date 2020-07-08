@@ -35,7 +35,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
             _matcherMock.Setup(m => m.MatchAsync(It.IsAny<Entity>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new MatchResult
                 {
-                    Synonyms = new MatchResultSynonym[0],
+                    Synonyms = new MatchResultItem[0],
                     Links = new MatchResultLink[0],
                 });
 
@@ -139,7 +139,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                 {
                     Synonyms = new[]
                     {
-                        new MatchResultSynonym
+                        new MatchResultItem
                         {
                             MatchReason = "Matched for testing",
                             RegisteredEntity = new RegisteredEntity
@@ -185,7 +185,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                 {
                     Synonyms = new[]
                     {
-                        new MatchResultSynonym
+                        new MatchResultItem
                         {
                             MatchReason = "Matched for testing",
                             RegisteredEntity = new RegisteredEntity
@@ -223,7 +223,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                 {
                     Synonyms = new[]
                     {
-                        new MatchResultSynonym
+                        new MatchResultItem
                         {
                             MatchReason = "Matched for testing",
                             RegisteredEntity = new RegisteredEntity
@@ -260,7 +260,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                 .ReturnsAsync(
                     new MatchResult
                     {
-                        Synonyms = new MatchResultSynonym[0],
+                        Synonyms = new MatchResultItem[0],
                         Links = new[]
                         {
                             new MatchResultLink
@@ -293,7 +293,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                 .ReturnsAsync(
                     new MatchResult
                     {
-                        Synonyms = new MatchResultSynonym[0],
+                        Synonyms = new MatchResultItem[0],
                         Links = new[]
                         {
                             new MatchResultLink
@@ -324,7 +324,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                 .ReturnsAsync(
                     new MatchResult
                     {
-                        Synonyms = new MatchResultSynonym[0],
+                        Synonyms = new MatchResultItem[0],
                         Links = new[]
                         {
                             new MatchResultLink

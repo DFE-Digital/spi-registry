@@ -20,6 +20,7 @@ namespace Dfe.Spi.Registry.Domain
         public string LocalAuthorityCode { get; set; }
         public string ManagementGroupType { get; set; }
         public string ManagementGroupId { get; set; }
+        public string ManagementGroupCode { get; set; }
         public long? ManagementGroupUkprn { get; set; }
         public string ManagementGroupCompaniesHouseNumber { get; set; }
     }

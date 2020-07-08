@@ -12,6 +12,7 @@ namespace Dfe.Spi.Registry.Infrastructure.StaticData.Matching
             var profiles = new[]
             {
                 GetLearningProviderSynonyms(),
+                GetLearningProviderManagementGroup(),
             };
 
             return Task.FromResult(profiles);
@@ -51,6 +52,34 @@ namespace Dfe.Spi.Registry.Infrastructure.StaticData.Matching
                             {
                                 SourceAttribute = "Ukprn",
                                 CandidateAttribute = "Ukprn",
+                            },
+                        }
+                    },
+                }
+            };
+        }
+        
+        private MatchingProfile GetLearningProviderManagementGroup()
+        {
+            return new MatchingProfile
+            {
+                Id = "4395706b-a583-47dc-92ce-56648c8608f4",
+                Name = "Learning provider management group",
+                SourceType = EntityNameTranslator.LearningProviderSingular,
+                CandidateType = EntityNameTranslator.ManagementGroupSingular,
+                LinkType = "managementgroup",
+                Rules = new[]
+                {
+                    new MatchingProfileRuleset
+                    {
+                        Id = "583f2cdc-1416-4167-9bae-b9ed30058d0a",
+                        Name = "Matching ManagementGroupCode",
+                        Conditions = new[]
+                        {
+                            new MatchingProfileCondition
+                            {
+                                SourceAttribute = "ManagementGroupCode",
+                                CandidateAttribute = "ManagementGroupCode",
                             },
                         }
                     },

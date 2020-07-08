@@ -99,6 +99,7 @@ namespace Dfe.Spi.Registry.Application.Sync
                     LocalAuthorityCode = learningProvider.LocalAuthorityCode,
                     ManagementGroupType = learningProvider.ManagementGroup?.Type,
                     ManagementGroupId = learningProvider.ManagementGroup?.Identifier,
+                    ManagementGroupCode = learningProvider.ManagementGroup?.Code,
                     ManagementGroupUkprn = learningProvider.ManagementGroup?.Ukprn,
                     ManagementGroupCompaniesHouseNumber = learningProvider.ManagementGroup?.CompaniesHouseNumber,
                 };
@@ -113,6 +114,7 @@ namespace Dfe.Spi.Registry.Application.Sync
                     SourceSystemId = managementGroup.Code,
                     ManagementGroupType = managementGroup.Type,
                     ManagementGroupId = managementGroup.Identifier,
+                    ManagementGroupCode = managementGroup.Code,
                     ManagementGroupUkprn = managementGroup.Ukprn,
                     ManagementGroupCompaniesHouseNumber = managementGroup.CompaniesHouseNumber,
                 };
@@ -144,6 +146,7 @@ namespace Dfe.Spi.Registry.Application.Sync
                 LocalAuthorityCode = entity.LocalAuthorityCode,
                 ManagementGroupType = entity.ManagementGroupType,
                 ManagementGroupId = entity.ManagementGroupId,
+                ManagementGroupCode = entity.ManagementGroupCode,
                 ManagementGroupUkprn = entity.ManagementGroupUkprn,
                 ManagementGroupCompaniesHouseNumber = entity.ManagementGroupCompaniesHouseNumber,
             };
@@ -249,7 +252,8 @@ namespace Dfe.Spi.Registry.Application.Sync
                     }
                 }
 
-                foreach (var link in matchResult.Links)
+                var linksToAddToOtherEntity = matchResult.Links.Where(l => !l.LinkFromSynonym).ToArray();
+                foreach (var link in linksToAddToOtherEntity)
                 {
                     var linkFromUpdate = updatedEntity.Links.Single(updateLink =>
                         updateLink.EntityType == link.Entity.EntityType &&
@@ -373,6 +377,7 @@ namespace Dfe.Spi.Registry.Application.Sync
                    entity1.LocalAuthorityCode == entity2.LocalAuthorityCode &&
                    entity1.ManagementGroupType == entity2.ManagementGroupType &&
                    entity1.ManagementGroupId == entity2.ManagementGroupId &&
+                   entity1.ManagementGroupCode == entity2.ManagementGroupCode &&
                    entity1.ManagementGroupUkprn == entity2.ManagementGroupUkprn &&
                    entity1.ManagementGroupCompaniesHouseNumber == entity2.ManagementGroupCompaniesHouseNumber;
         }
