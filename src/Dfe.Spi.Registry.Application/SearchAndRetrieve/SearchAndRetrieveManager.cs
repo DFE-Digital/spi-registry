@@ -11,6 +11,7 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
     public interface ISearchAndRetrieveManager
     {
         Task<PublicSearchResult> SearchAsync(SearchRequest request, string entityType, CancellationToken cancellationToken);
+        Task<RegisteredEntity> RetrieveAsync(string entityType, string sourceSystemName, string sourceSystemId, DateTime pointInTime, CancellationToken cancellationToken);
     }
     
     public class SearchAndRetrieveManager : ISearchAndRetrieveManager
@@ -85,6 +86,12 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
                 Taken = searchResult.Results.Length,
                 TotalNumberOfRecords = searchResult.TotalNumberOfRecords,
             };
+        }
+
+        public async Task<RegisteredEntity> RetrieveAsync(string entityType, string sourceSystemName, string sourceSystemId, DateTime pointInTime, CancellationToken cancellationToken)
+        {
+            var registeredEntity = await _repository.RetrieveAsync(entityType, sourceSystemName, sourceSystemId, pointInTime, cancellationToken);
+            return registeredEntity;
         }
     }
 }

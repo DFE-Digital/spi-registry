@@ -67,7 +67,7 @@ namespace Dfe.Spi.Registry.Infrastructure.StaticData.Matching
                 Name = "Learning provider management group",
                 SourceType = EntityNameTranslator.LearningProviderSingular,
                 CandidateType = EntityNameTranslator.ManagementGroupSingular,
-                LinkType = "managementgroup",
+                LinkType = "ManagementGroup",
                 Rules = new[]
                 {
                     new MatchingProfileRuleset
