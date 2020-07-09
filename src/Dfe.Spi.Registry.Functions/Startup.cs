@@ -5,6 +5,7 @@ using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Application.Matching;
+using Dfe.Spi.Registry.Application.SearchAndRetrieve;
 using Dfe.Spi.Registry.Application.Sync;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Data;
@@ -42,7 +43,8 @@ namespace Dfe.Spi.Registry.Functions
             AddConfiguration(services, rawConfiguration);
             AddLogging(services);
             AddData(services);
-            AddSyncing(services);
+            AddSync(services);
+            AddSearchAndRetrieve(services);
         }
 
         private void AddConfiguration(IServiceCollection services, IConfigurationRoot rawConfiguration)
@@ -74,13 +76,19 @@ namespace Dfe.Spi.Registry.Functions
                 .AddScoped<IRepository, CosmosDbRepository>();
         }
         
-        private void AddSyncing(IServiceCollection services)
+        private void AddSync(IServiceCollection services)
         {
             services
                 .AddScoped<ISyncQueue, StorageQueueSyncQueue>()
                 .AddScoped<ISyncManager, SyncManager>()
                 .AddScoped<IMatchingProfileRepository, StaticMatchingProfileRepository>()
                 .AddScoped<IMatcher, Matcher>();
+        }
+
+        private void AddSearchAndRetrieve(IServiceCollection services)
+        {
+            services
+                .AddScoped<ISearchAndRetrieveManager, SearchAndRetrieveManager>();
         }
     }
 }

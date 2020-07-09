@@ -171,7 +171,8 @@ namespace Dfe.Spi.Registry.Application.Matching
                 Skip = 0,
                 Take = 1000,
             };
-            var candidates = await _repository.SearchAsync(searchRequest, profile.CandidateType, pointInTime, cancellationToken);
+            var searchResult = await _repository.SearchAsync(searchRequest, profile.CandidateType, pointInTime, cancellationToken);
+            var candidates = searchResult.Results;
 
             return candidates
                 .Where(candidate =>

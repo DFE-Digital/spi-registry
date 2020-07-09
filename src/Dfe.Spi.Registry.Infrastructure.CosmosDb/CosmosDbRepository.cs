@@ -3,20 +3,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.Models;
 using Dfe.Spi.Registry.Domain;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Data;
 using Microsoft.Azure.Cosmos;
+using Newtonsoft.Json.Linq;
 
 namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 {
     public class CosmosDbRepository : IRepository
     {
+        private readonly ILoggerWrapper _logger;
         private readonly Container _container;
 
-        public CosmosDbRepository(DataConfiguration configuration)
+        public CosmosDbRepository(DataConfiguration configuration, ILoggerWrapper logger)
         {
+            _logger = logger;
+            
             var client = new CosmosClient(
                 configuration.CosmosDbUri, 
                 configuration.CosmosDbKey,
@@ -75,15 +80,14 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 .AddRegisteredEntityCondition("type", DataOperator.Equals, entityType)
                 .AddEntityCondition("sourceSystemName", DataOperator.Equals, sourceSystemName)
                 .AddEntityCondition("sourceSystemId", DataOperator.Equals, sourceSystemId)
-                .AddPointInTimeConditions(pointInTime)
-                .ToString();
-            var queryDefinition = new QueryDefinition(query);
-            var results = await RunQuery(queryDefinition, cancellationToken);
+                .AddPointInTimeConditions(pointInTime);
+            var results = await RunQuery(query, cancellationToken);
             return results.SingleOrDefault();
         }
 
-        public async Task<RegisteredEntity[]> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken)
+        public async Task<SearchResult> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken)
         {
+            // Build the query
             var query = new CosmosQuery(request.CombinationOperator.Equals("or") ? CosmosCombinationOperator.Or : CosmosCombinationOperator.And)
                 .AddRegisteredEntityCondition("type", DataOperator.Equals, entityType)
                 .AddPointInTimeConditions(pointInTime);
@@ -98,17 +102,43 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 
                 query.AddGroup(groupQuery);
             }
+
+            // Take a copy for the count
+            var countQuery = query.Clone();
+
+            // Add the skip and take
+            query.TakeResultsBetween(request.Skip, request.Take);
             
-            var queryDefinition = new QueryDefinition(query.ToString());
-            var results = await RunQuery(queryDefinition, cancellationToken);
-            return results;
+            // Get the results
+            var results = await RunQuery(query, cancellationToken);
+            var count = await RunCountQuery(countQuery, cancellationToken);
+            
+            return new SearchResult
+            {
+                Results = results,
+                TotalNumberOfRecords = count,
+            };
         }
 
 
-        private async Task<RegisteredEntity[]> RunQuery(QueryDefinition query, CancellationToken cancellationToken)
+        private async Task<RegisteredEntity[]> RunQuery(CosmosQuery query, CancellationToken cancellationToken)
         {
-            var iterator = _container.GetItemQueryIterator<RegisteredEntity>(query);
-            var results = new List<RegisteredEntity>();
+            var queryDefinition = new QueryDefinition(query.ToString());
+            return await RunQuery<RegisteredEntity>(queryDefinition, cancellationToken);
+        }
+
+        private async Task<long> RunCountQuery(CosmosQuery query, CancellationToken cancellationToken)
+        {
+            var queryDefinition = new QueryDefinition(query.ToString(true));
+            var results = await RunQuery<JObject>(queryDefinition, cancellationToken);
+
+            return (long) ((JValue) results[0]["$1"]).Value;
+        }
+        private async Task<T[]> RunQuery<T>(QueryDefinition query, CancellationToken cancellationToken)
+        {
+            _logger.Debug($"Running CosmosDB query: {query.QueryText}");
+            var iterator = _container.GetItemQueryIterator<T>(query);
+            var results = new List<T>();
 
             while (iterator.HasMoreResults)
             {

@@ -12,6 +12,6 @@ namespace Dfe.Spi.Registry.Domain.Data
         Task<RegisteredEntity> RetrieveAsync(string entityType, string sourceSystemName, string sourceSystemId, DateTime pointInTime,
             CancellationToken cancellationToken);
 
-        Task<RegisteredEntity[]> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken);
+        Task<SearchResult> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken);
     }
 }

@@ -22,6 +22,33 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Infrastruc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.IntegrationTests", "Dfe.Spi.Registry.IntegrationTests\Dfe.Spi.Registry.IntegrationTests.csproj", "{34584C89-7D70-4657-8FCA-4386F3D5666E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Deploy", "Deploy", "{30B4769D-3F1D-40F6-B91A-E12FF4DAF682}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{3E981033-FF8E-4B6D-9866-0D5185142986}"
+ProjectSection(SolutionItems) = preProject
+	..\pipelines\build.yml = ..\pipelines\build.yml
+EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Release", "Release", "{F142BE59-A841-48C6-9972-5345F7042E89}"
+ProjectSection(SolutionItems) = preProject
+	..\azure\CreateSearchIndex.ps1 = ..\azure\CreateSearchIndex.ps1
+	..\azure\spi-registered-entities.schema.json = ..\azure\spi-registered-entities.schema.json
+	..\azure\template.json = ..\azure\template.json
+EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EAPIM", "EAPIM", "{77FD5357-89A1-4BFE-BFD7-96F08FF2A2BD}"
+ProjectSection(SolutionItems) = preProject
+	..\eapim\named-values.csv = ..\eapim\named-values.csv
+	..\eapim\oauth.xml = ..\eapim\oauth.xml
+	..\eapim\policy.xml = ..\eapim\policy.xml
+	..\eapim\swagger.json = ..\eapim\swagger.json
+EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Eventing", "Eventing", "{C442C3DB-FE98-4CF0-A75B-6B17AEB731E4}"
+ProjectSection(SolutionItems) = preProject
+	..\eventing\SubscribeToEvent.ps1 = ..\eventing\SubscribeToEvent.ps1
+EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -74,5 +101,9 @@ Global
 		{18A6967C-63CC-49C2-BD63-62F437D642C7} = {DBE4D18B-6BAC-4EB8-86E7-3E7F531E403F}
 		{CED49021-48B9-4216-A1E7-3C56AF979DD4} = {DBE4D18B-6BAC-4EB8-86E7-3E7F531E403F}
 		{34584C89-7D70-4657-8FCA-4386F3D5666E} = {DBE4D18B-6BAC-4EB8-86E7-3E7F531E403F}
+		{3E981033-FF8E-4B6D-9866-0D5185142986} = {30B4769D-3F1D-40F6-B91A-E12FF4DAF682}
+		{F142BE59-A841-48C6-9972-5345F7042E89} = {30B4769D-3F1D-40F6-B91A-E12FF4DAF682}
+		{77FD5357-89A1-4BFE-BFD7-96F08FF2A2BD} = {30B4769D-3F1D-40F6-B91A-E12FF4DAF682}
+		{C442C3DB-FE98-4CF0-A75B-6B17AEB731E4} = {30B4769D-3F1D-40F6-B91A-E12FF4DAF682}
 	EndGlobalSection
 EndGlobal

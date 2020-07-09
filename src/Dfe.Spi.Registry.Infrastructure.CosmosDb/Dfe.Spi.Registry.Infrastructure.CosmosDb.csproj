@@ -10,6 +10,7 @@
 
     <ItemGroup>
       <PackageReference Include="Dfe.Spi.Common.Extensions" Version="1.1.1" />
+      <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.0" />
       <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.10.1" />
     </ItemGroup>
 

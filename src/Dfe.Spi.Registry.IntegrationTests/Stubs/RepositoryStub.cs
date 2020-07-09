@@ -56,16 +56,26 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
             return Task.FromResult(Clone(validAtPointInTime));
         }
 
-        public Task<RegisteredEntity[]> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken)
+        public Task<SearchResult> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken)
         {
             var matcherFunc = SearchRequestToMatcherFunc(request);
 
             var matches = Store
                 .Where(e => e.Type.Equals(entityType, StringComparison.InvariantCultureIgnoreCase))
                 .Where(matcherFunc);
-            var validAtPointInTime = GetRegisteredEntitiesRelevantAtPointInTime(matches, pointInTime);
+            var validAtPointInTime = GetRegisteredEntitiesRelevantAtPointInTime(matches, pointInTime).ToArray();
 
-            return Task.FromResult(validAtPointInTime.Select(Clone).ToArray());
+            var result = new SearchResult
+            {
+                Results = validAtPointInTime
+                    .Skip(request.Skip)
+                    .Take(request.Take)
+                    .Select(Clone)
+                    .ToArray(),
+                TotalNumberOfRecords = validAtPointInTime.Length,
+            };
+
+            return Task.FromResult(result);
         }
 
         private RegisteredEntity GetRegisteredEntityRelevantAtPointInTime(IEnumerable<RegisteredEntity> entities, DateTime pointInTime)

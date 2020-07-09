@@ -38,6 +38,8 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 
         
         private StringBuilder _query = new StringBuilder();
+        private int? _skip;
+        private int? _take;
 
         public CosmosQuery(CosmosCombinationOperator combinationOperator)
         {
@@ -88,9 +90,38 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                     .AddRegisteredEntityCondition("validTo", DataOperator.GreaterThan, $"{pointInTime.ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z"));
         }
 
+        public CosmosQuery TakeResultsBetween(int skip, int take)
+        {
+            _skip = skip;
+            _take = take;
+            return this;
+        }
+
         public override string ToString()
         {
-            return $"SELECT * FROM c WHERE EXISTS (SELECT VALUE e FROM e IN c.entities WHERE {_query})";
+            return ToString(false);
+        }
+
+        public string ToString(bool forCount)
+        {
+            var querySelection = forCount ? "COUNT(c)" : "*";
+            var fullQuery = $"SELECT {querySelection} FROM c WHERE EXISTS (SELECT VALUE e FROM e IN c.entities WHERE {_query}) ORDER BY c.id";
+            
+            if (_skip.HasValue && _take.HasValue)
+            {
+                return $"{fullQuery} OFFSET {_skip.Value} LIMIT {_take.Value}";
+            }
+
+            return fullQuery;
+        }
+
+        public CosmosQuery Clone()
+        {
+            var clone = new CosmosQuery(CombinationOperator);
+            clone._query = _query;
+            clone._skip = _skip;
+            clone._take = _take;
+            return clone;
         }
 
 
