@@ -347,6 +347,51 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                 Times.Once);
         }
 
+        [Test, AutoData]
+        public async Task ThenItShouldNotUpdateLinkedEntityIfLinkAlreadyExists(SyncQueueItem queueItem, RegisteredEntity linkedEntity)
+        {
+            linkedEntity.ValidFrom = queueItem.PointInTime.AddDays(-1);
+            linkedEntity.Links = new[]
+            {
+                new Link
+                {
+                    EntityType = queueItem.Entity.EntityType,
+                    SourceSystemName = queueItem.Entity.SourceSystemName,
+                    SourceSystemId = queueItem.Entity.SourceSystemId,
+                    LinkedAt = queueItem.PointInTime.AddDays(-60),
+                    LinkedBy = "Unit test fixture",
+                    LinkedReason = "Testing existing links",
+                    LinkType = "test",
+                },
+            };
+            _matcherMock.Setup(m => m.MatchAsync(It.IsAny<Entity>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    new MatchResult
+                    {
+                        Synonyms = new MatchResultItem[0],
+                        Links = new[]
+                        {
+                            new MatchResultLink
+                            {
+                                RegisteredEntity = linkedEntity,
+                                Entity = linkedEntity.Entities[0],
+                                LinkType = "test",
+                                MatchReason = "Linked for testing",
+                            },
+                        },
+                    });
+
+            await _syncManager.ProcessSyncQueueItemAsync(queueItem, _cancellationToken);
+
+            _repositoryMock.Verify(r => r.StoreAsync(
+                    It.Is<RegisteredEntity[]>(entitiesToUpdate =>
+                        entitiesToUpdate.Any(update => update.Id == linkedEntity.Id)),
+                    It.IsAny<RegisteredEntity[]>(),
+                    _cancellationToken),
+                Times.Never);
+            
+        }
+
         private static bool AreEqual<T>(T[] expected, T[] actual)
         {
             if (expected == null && actual == null)

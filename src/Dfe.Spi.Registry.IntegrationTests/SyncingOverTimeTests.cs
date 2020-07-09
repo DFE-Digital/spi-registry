@@ -27,8 +27,16 @@ namespace Dfe.Spi.Registry.IntegrationTests
             await RunScenario(sample);
         }
 
-        
-        
+        [Test]
+        public async Task ASimpleOrderedSetOfEventsShouldSyncCorrectly()
+        {
+            var sampleJson = typeof(SyncingOverTimeTests).Assembly.GetSample("OrderedSeriesOfEvents.json");
+            var sample = JsonConvert.DeserializeObject<TestScenario>(sampleJson);
+
+            await RunScenario(sample);
+        }
+
+
         private async Task RunScenario(TestScenario scenario)
         {
             var cancellationToken = new CancellationToken();
@@ -74,7 +82,7 @@ namespace Dfe.Spi.Registry.IntegrationTests
         {
             var repository = scope.GetService<RepositoryStub>();
 
-            for(var i = 0; i < scenario.ExpectedEndState.Length; i++)
+            for (var i = 0; i < scenario.ExpectedEndState.Length; i++)
             {
                 var outcome = scenario.ExpectedEndState[i];
                 var matches = repository.Store.Where(storedEntity =>
@@ -83,7 +91,7 @@ namespace Dfe.Spi.Registry.IntegrationTests
                         storedEntity.ValidTo == outcome.Entity.ValidTo &&
                         AreEqual(outcome.Entity.Entities, storedEntity.Entities))
                     .ToArray();
-                
+
                 Assert.AreEqual(1, matches.Length, $"Expected outcome {outcome.Name} (index {i}) to match a single stored entity but matched {matches.Length}");
             }
         }
@@ -98,11 +106,13 @@ namespace Dfe.Spi.Registry.IntegrationTests
             for (var i = 0; i < expected.Length; i++)
             {
                 var expectedItem = expected[i];
-                var actualItem = actual[i];
+                var actualItem = actual.SingleOrDefault(a => a.EntityType == expectedItem.EntityType &&
+                                                             a.SourceSystemName == expectedItem.SourceSystemName &&
+                                                             a.SourceSystemId == expectedItem.SourceSystemId);
 
-                if (expectedItem.LinkType != actualItem.LinkType ||
+                if (actualItem != null &&
+                    expectedItem.LinkType != actualItem.LinkType ||
                     expectedItem.LinkedBy != actualItem.LinkedBy ||
-                    expectedItem.LinkedAt != actualItem.LinkedAt ||
                     expectedItem.Name != actualItem.Name ||
                     expectedItem.Type != actualItem.Type ||
                     expectedItem.SubType != actualItem.SubType ||
@@ -120,10 +130,7 @@ namespace Dfe.Spi.Registry.IntegrationTests
                     expectedItem.ManagementGroupId != actualItem.ManagementGroupId ||
                     expectedItem.ManagementGroupCode != actualItem.ManagementGroupCode ||
                     expectedItem.ManagementGroupUkprn != actualItem.ManagementGroupUkprn ||
-                    expectedItem.ManagementGroupCompaniesHouseNumber != actualItem.ManagementGroupCompaniesHouseNumber ||
-                    expectedItem.EntityType != actualItem.EntityType ||
-                    expectedItem.SourceSystemName != actualItem.SourceSystemName ||
-                    expectedItem.SourceSystemId != actualItem.SourceSystemId)
+                    expectedItem.ManagementGroupCompaniesHouseNumber != actualItem.ManagementGroupCompaniesHouseNumber)
                 {
                     return false;
                 }

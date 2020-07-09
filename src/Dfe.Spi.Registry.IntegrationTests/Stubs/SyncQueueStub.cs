@@ -12,11 +12,13 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
     public class SyncQueueStub : ISyncQueue
     {
         private readonly ServiceFactory<ProcessEntityEvent> _functionFactory;
+        private readonly RepositoryStub _repositoryStub;
         private readonly ConcurrentQueue<SyncQueueItem> _queue;
 
-        public SyncQueueStub(ServiceFactory<ProcessEntityEvent> functionFactory)
+        public SyncQueueStub(ServiceFactory<ProcessEntityEvent> functionFactory, RepositoryStub repositoryStub)
         {
             _functionFactory = functionFactory;
+            _repositoryStub = repositoryStub;
             _queue = new ConcurrentQueue<SyncQueueItem>();
         }
 

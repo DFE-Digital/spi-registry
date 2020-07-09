@@ -53,7 +53,7 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
                           entity.SourceSystemName.Equals(sourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
                           entity.SourceSystemId.Equals(sourceSystemId, StringComparison.InvariantCultureIgnoreCase)));
             var validAtPointInTime = GetRegisteredEntityRelevantAtPointInTime(entities, pointInTime);
-            return Task.FromResult(validAtPointInTime);
+            return Task.FromResult(Clone(validAtPointInTime));
         }
 
         public Task<RegisteredEntity[]> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken)
@@ -65,7 +65,7 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
                 .Where(matcherFunc);
             var validAtPointInTime = GetRegisteredEntitiesRelevantAtPointInTime(matches, pointInTime);
 
-            return Task.FromResult(validAtPointInTime.ToArray());
+            return Task.FromResult(validAtPointInTime.Select(Clone).ToArray());
         }
 
         private RegisteredEntity GetRegisteredEntityRelevantAtPointInTime(IEnumerable<RegisteredEntity> entities, DateTime pointInTime)
@@ -92,6 +92,11 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
 
         private RegisteredEntity Clone(RegisteredEntity source)
         {
+            if (source == null)
+            {
+                return null;
+            }
+            
             return new RegisteredEntity
             {
                 Id = source.Id,
@@ -187,12 +192,15 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
                         throw new Exception($"Cannot find Entity property with name {filter.Field}");
                     }
 
-                    var value = (string) property.GetValue(entity);
+                    var value = property.GetValue(entity)?.ToString();
                     var isMatch = false;
                     switch (filter.Operator)
                     {
                         case DataOperator.Equals:
                             isMatch = filter.Value.Equals(value, StringComparison.InvariantCultureIgnoreCase);
+                            break;
+                        case DataOperator.IsNull:
+                            isMatch = value == null;
                             break;
                         default:
                             throw new Exception($"Operator {filter.Operator} is not supported (Used matching {filter.Field})");

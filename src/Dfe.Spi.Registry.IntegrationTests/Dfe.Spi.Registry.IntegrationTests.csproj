@@ -19,6 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <EmbeddedResource Include="Samples\OrderedSeriesOfEvents.json" />
       <None Remove="Samples\SingleEvent.json" />
       <EmbeddedResource Include="Samples\SingleEvent.json" />
     </ItemGroup>
