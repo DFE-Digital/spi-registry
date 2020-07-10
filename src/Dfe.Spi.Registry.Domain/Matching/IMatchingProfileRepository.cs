@@ -5,6 +5,6 @@ namespace Dfe.Spi.Registry.Domain.Matching
 {
     public interface IMatchingProfileRepository
     {
-        Task<MatchingProfile[]> GetMatchingProfilesAsync(CancellationToken cancellationToken);
+        Task<MatchingProfile[]> GetMatchingProfilesForEntityTypeAsync(string entityType, CancellationToken cancellationToken);
     }
 }

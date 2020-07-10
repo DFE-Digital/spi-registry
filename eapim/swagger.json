@@ -294,48 +294,6 @@
         }
       }
     },
-    "/matching/sync": {
-      "post": {
-        "description": "Processing matching for given entity",
-        "operationId": "update-entity-links",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "Authorization",
-            "description": "Bearer token authentication.",
-            "type": "string",
-            "required": true
-          },
-          {
-            "in": "header",
-            "name": "X-Internal-Request-Id",
-            "type": "string",
-            "description": "An internal request id. Should be a vaild guid.",
-            "required": true
-          },
-          {
-            "in": "header",
-            "name": "X-External-Request-Id",
-            "description": "An optional external request id. Used in logging.",
-            "type": "string"
-          },
-          {
-            "in": "body",
-            "name": "Entity pointer",
-            "description": "A pointer to the entity to match.",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entity-pointer"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Matching completed"
-          } 
-        }
-      }
-    },
     "/HeartBeat": {
       "get": {
         "description": "Standard diagnostics method, used to test the health of the facade's underlying system.",

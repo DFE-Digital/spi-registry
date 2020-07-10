@@ -12,11 +12,6 @@ variables:
   buildPlatform: 'any cpu'
 
 steps:
-  - task: UseDotNet@2
-    inputs:
-      packageType: 'sdk'
-      version: '2.2.x'
-
   - task: NuGetToolInstaller@1
     displayName: 'Use NuGet 5.1.0'
     inputs:
@@ -40,7 +35,7 @@ steps:
     displayName: Test
     inputs:
       command: test
-      projects: 'src/**/*.UnitTests.csproj'
+      projects: 'src/**/*.*Tests.csproj'
       arguments: '--configuration $(buildConfiguration) --no-build'
 
   - task: DotNetCoreCLI@2

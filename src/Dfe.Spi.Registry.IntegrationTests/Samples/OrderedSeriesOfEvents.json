@@ -1,0 +1,320 @@
+{
+  "events": [
+    {
+      "name": "Initial local authority from GIAS",
+      "entityType": "management-groups",
+      "sourceSystemName": "GIAS",
+      "payload": {
+        "details": {
+          "type": "LocalAuthority",
+          "code": "LocalAuthority-826",
+          "identifier": "826",
+          "name": "Milton Keynes"
+        },
+        "pointInTime": "2020-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "name": "Initial provider 1 from GIAS",
+      "entityType": "learning-providers",
+      "sourceSystemName": "GIAS",
+      "payload": {
+        "details": {
+          "name": "Test school one",
+          "type": "LocalAuthorityMaintainedSchool",
+          "subType": "CommunitySchool",
+          "status": "Open",
+          "openDate": "2001-09-01T00:00:00",
+          "closeDate": null,
+          "urn": 123456,
+          "ukprn": 10010099,
+          "uprn": "12345678",
+          "companiesHouseNumber": null,
+          "charitiesCommissionNumber": null,
+          "academyTrustCode": null,
+          "dfeNumber": "826/1234",
+          "localAuthorityCode": "826",
+          "managementGroup": {
+            "type": "LocalAuthority",
+            "code": "LocalAuthority-826",
+            "identifier": "826",
+            "name": "Milton Keynes"
+          }
+        },
+        "pointInTime": "2020-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "name": "Updated name of provider 1 from GIAS",
+      "entityType": "learning-providers",
+      "sourceSystemName": "GIAS",
+      "payload": {
+        "details": {
+          "name": "Test School OneA",
+          "type": "LocalAuthorityMaintainedSchool",
+          "subType": "CommunitySchool",
+          "status": "Open",
+          "openDate": "2001-09-01T00:00:00",
+          "closeDate": null,
+          "urn": 123456,
+          "ukprn": 10010099,
+          "uprn": "12345678",
+          "companiesHouseNumber": null,
+          "charitiesCommissionNumber": null,
+          "academyTrustCode": null,
+          "dfeNumber": "826/1234",
+          "localAuthorityCode": "826",
+          "managementGroup": {
+            "type": "LocalAuthority",
+            "code": "LocalAuthority-826",
+            "identifier": "826",
+            "name": "Milton Keynes"
+          }
+        },
+        "pointInTime": "2020-04-01T00:00:00.000Z"
+      }
+    },
+    {
+      "name": "Initial provider 1 from UKRLP",
+      "entityType": "learning-providers",
+      "sourceSystemName": "UKRLP",
+      "payload": {
+        "details": {
+          "name": "TEST SCHOOL",
+          "type": null,
+          "subType": null,
+          "status": "Open",
+          "openDate": null,
+          "closeDate": null,
+          "urn": 123456,
+          "ukprn": 10010099,
+          "uprn": null,
+          "companiesHouseNumber": null,
+          "charitiesCommissionNumber": null,
+          "academyTrustCode": null,
+          "dfeNumber": "826/1234",
+          "localAuthorityCode": null,
+          "managementGroup": null
+        },
+        "pointInTime": "2020-05-01T00:00:00.000Z"
+      }
+    }
+  ],
+  "expectedEndState": [
+    {
+      "name": "Initial management group",
+      "entity": {
+        "type": "management-group",
+        "validFrom": "2020-01-01T00:00:00Z",
+        "validTo": null,
+        "entities": [
+          {
+            "linkType": null,
+            "linkedBy": null,
+            "linkedReason": null,
+            "name": null,
+            "type": null,
+            "subType": null,
+            "status": null,
+            "openDate": null,
+            "closeDate": null,
+            "urn": null,
+            "ukprn": null,
+            "uprn": null,
+            "companiesHouseNumber": null,
+            "charitiesCommissionNumber": null,
+            "academyTrustCode": null,
+            "dfeNumber": null,
+            "localAuthorityCode": null,
+            "managementGroupType": "LocalAuthority",
+            "managementGroupId": "826",
+            "managementGroupCode": "LocalAuthority-826",
+            "managementGroupUkprn": null,
+            "managementGroupCompaniesHouseNumber": null,
+            "entityType": "management-group",
+            "sourceSystemName": "GIAS",
+            "sourceSystemId": "LocalAuthority-826"
+          }
+        ],
+        "links": [
+          {
+            "linkType": "managementgroup",
+            "linkedBy": "Matcher",
+            "linkedReason": "Matched using ruleset Matching ManagementGroupCode in profile Learning provider management group",
+            "entityType": "learning-provider",
+            "sourceSystemName": "GIAS",
+            "sourceSystemId": "132787"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Initial provider",
+      "entity": {
+        "type": "learning-provider",
+        "validFrom": "2020-01-01T00:00:00Z",
+        "validTo": "2020-04-01T00:00:00Z",
+        "entities": [
+          {
+            "linkType": null,
+            "linkedBy": null,
+            "linkedReason": null,
+            "name": "Test school one",
+            "type": "LocalAuthorityMaintainedSchool",
+            "subType": "CommunitySchool",
+            "status": "Open",
+            "openDate": "2001-09-01T00:00:00",
+            "closeDate": null,
+            "urn": 123456,
+            "ukprn": 10010099,
+            "uprn": "12345678",
+            "companiesHouseNumber": null,
+            "charitiesCommissionNumber": null,
+            "academyTrustCode": null,
+            "dfeNumber": "826/1234",
+            "localAuthorityCode": "826",
+            "managementGroupType": "LocalAuthority",
+            "managementGroupId": "826",
+            "managementGroupCode": "LocalAuthority-826",
+            "managementGroupUkprn": null,
+            "managementGroupCompaniesHouseNumber": null,
+            "entityType": "learning-provider",
+            "sourceSystemName": "GIAS",
+            "sourceSystemId": "123456"
+          }
+        ],
+        "links": [
+          {
+            "linkType": "managementgroup",
+            "linkedBy": "Matcher",
+            "linkedReason": "Matched using ruleset Matching ManagementGroupCode in profile Learning provider management group",
+            "entityType": "management-group",
+            "sourceSystemName": "GIAS",
+            "sourceSystemId": "LocalAuthority-826"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Provider updated name",
+      "entity": {
+        "type": "learning-provider",
+        "validFrom": "2020-04-01T00:00:00Z",
+        "validTo": "2020-05-01T00:00:00Z",
+        "entities": [
+          {
+            "linkType": null,
+            "linkedBy": null,
+            "linkedReason": null,
+            "name": "Test School OneA",
+            "type": "LocalAuthorityMaintainedSchool",
+            "subType": "CommunitySchool",
+            "status": "Open",
+            "openDate": "2001-09-01T00:00:00",
+            "closeDate": null,
+            "urn": 123456,
+            "ukprn": 10010099,
+            "uprn": "12345678",
+            "companiesHouseNumber": null,
+            "charitiesCommissionNumber": null,
+            "academyTrustCode": null,
+            "dfeNumber": "826/1234",
+            "localAuthorityCode": "826",
+            "managementGroupType": "LocalAuthority",
+            "managementGroupId": "826",
+            "managementGroupCode": "LocalAuthority-826",
+            "managementGroupUkprn": null,
+            "managementGroupCompaniesHouseNumber": null,
+            "entityType": "learning-provider",
+            "sourceSystemName": "GIAS",
+            "sourceSystemId": "123456"
+          }
+        ],
+        "links": [
+          {
+            "linkType": "managementgroup",
+            "linkedBy": "Matcher",
+            "linkedReason": "Matched using ruleset Matching ManagementGroupCode in profile Learning provider management group",
+            "entityType": "management-group",
+            "sourceSystemName": "GIAS",
+            "sourceSystemId": "LocalAuthority-826"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Provider matched",
+      "entity": {
+        "type": "learning-provider",
+        "validFrom": "2020-05-01T00:00:00Z",
+        "validTo": null,
+        "entities": [
+          {
+            "linkType": "synonym",
+            "linkedBy": "Matcher",
+            "linkedReason": "Matched using ruleset Matching URN in profile Learning provider synonyms",
+            "name": "Test School OneA",
+            "type": "LocalAuthorityMaintainedSchool",
+            "subType": "CommunitySchool",
+            "status": "Open",
+            "openDate": "2001-09-01T00:00:00",
+            "closeDate": null,
+            "urn": 123456,
+            "ukprn": 10010099,
+            "uprn": "12345678",
+            "companiesHouseNumber": null,
+            "charitiesCommissionNumber": null,
+            "academyTrustCode": null,
+            "dfeNumber": "826/1234",
+            "localAuthorityCode": "826",
+            "managementGroupType": "LocalAuthority",
+            "managementGroupId": "826",
+            "managementGroupCode": "LocalAuthority-826",
+            "managementGroupUkprn": null,
+            "managementGroupCompaniesHouseNumber": null,
+            "entityType": "learning-provider",
+            "sourceSystemName": "GIAS",
+            "sourceSystemId": "123456"
+          },
+          {
+            "linkType": "synonym",
+            "linkedBy": "Matcher",
+            "linkedReason": "Matched using ruleset Matching URN in profile Learning provider synonyms",
+            "name": "TEST SCHOOL",
+            "type": null,
+            "subType": null,
+            "status": "Open",
+            "openDate": null,
+            "closeDate": null,
+            "urn": 123456,
+            "ukprn": 10010099,
+            "uprn": null,
+            "companiesHouseNumber": null,
+            "charitiesCommissionNumber": null,
+            "academyTrustCode": null,
+            "dfeNumber": "826/1234",
+            "localAuthorityCode": null,
+            "managementGroupType": null,
+            "managementGroupId": null,
+            "managementGroupCode": null,
+            "managementGroupUkprn": null,
+            "managementGroupCompaniesHouseNumber": null,
+            "entityType": "learning-provider",
+            "sourceSystemName": "UKRLP",
+            "sourceSystemId": "10010099"
+          }
+        ],
+        "links": [
+          {
+            "linkType": "managementgroup",
+            "linkedBy": "Matcher",
+            "linkedReason": "Matched using ruleset Matching ManagementGroupCode in profile Learning provider management group",
+            "entityType": "management-group",
+            "sourceSystemName": "GIAS",
+            "sourceSystemId": "LocalAuthority-826"
+          }
+        ]
+      }
+    }
+  ]
+}
