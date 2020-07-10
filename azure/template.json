@@ -294,10 +294,6 @@
     "functionAppKey": {
       "value": "[listkeys(concat(variables('functionAppId'), '/host/default/'),'2016-08-01').functionKeys.default]",
       "type": "string"
-    },
-    "searchKey": {
-      "type": "string",
-      "value": "[listAdminKeys(variables('searchServiceId'), '2015-08-19').PrimaryKey]"
     }
   }
 }
