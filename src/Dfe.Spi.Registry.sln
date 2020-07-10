@@ -31,8 +31,6 @@ EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Release", "Release", "{F142BE59-A841-48C6-9972-5345F7042E89}"
 ProjectSection(SolutionItems) = preProject
-	..\azure\CreateSearchIndex.ps1 = ..\azure\CreateSearchIndex.ps1
-	..\azure\spi-registered-entities.schema.json = ..\azure\spi-registered-entities.schema.json
 	..\azure\template.json = ..\azure\template.json
 EndProjectSection
 EndProject

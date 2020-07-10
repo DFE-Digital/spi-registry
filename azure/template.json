@@ -59,8 +59,9 @@
   },
   "variables": {
     "namePrefix": "[concat(parameters('serviceIdentifier'), parameters('environment'), parameters('environmentInstance'))]",
-    "searchServiceName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-acs-01')]",
-    "searchServiceId": "[concat(resourceGroup().id,'/providers/','Microsoft.Search/searchServices/', variables('searchServiceName'))]",
+    "cosmosAccountName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-cms-01')]",
+    "cosmosDatabaseName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-cdb-01')]",
+    "cosmosContainerName": "registered-entities",
     "storageAccountName": "[toLower(concat(variables('namePrefix'), parameters('appName')))]",
     "storageAccountId": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
     "functionAppName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-fa-01')]",
@@ -75,17 +76,89 @@
   },
   "resources": [
     {
-      "type": "Microsoft.Search/searchServices",
-      "apiVersion": "2015-08-19",
-      "name": "[variables('searchServiceName')]",
-      "location": "West Europe",
-      "sku": {
-        "name": "basic"
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2020-04-01",
+      "name": "[variables('cosmosAccountName')]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "defaultExperience": "Core (SQL)",
+        "hidden-cosmos-mmspecial": "",
+        "CosmosAccountType": "Production"
       },
+      "kind": "GlobalDocumentDB",
       "properties": {
-        "replicaCount": 1,
-        "partitionCount": 1,
-        "hostingMode": "Default"
+        "publicNetworkAccess": "Enabled",
+        "enableAutomaticFailover": false,
+        "enableMultipleWriteLocations": false,
+        "isVirtualNetworkFilterEnabled": false,
+        "virtualNetworkRules": [],
+        "disableKeyBasedMetadataWriteAccess": false,
+        "enableFreeTier": false,
+        "enableAnalyticalStorage": false,
+        "databaseAccountOfferType": "Standard",
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session",
+          "maxIntervalInSeconds": 5,
+          "maxStalenessPrefix": 100
+        },
+        "capabilities": [],
+        "ipRules": []
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+      "apiVersion": "2020-04-01",
+      "name": "[concat(variables('cosmosAccountName'), '/', variables('cosmosDatabaseName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName'))]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "[variables('cosmosAccountName')]"
+        },
+        "options": {}
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2020-04-01",
+      "name": "[concat(variables('cosmosAccountName'), '/', variables('cosmosDatabaseName'), '/', variables('cosmosContainerName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosAccountName'), variables('cosmosDatabaseName'))]",
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName'))]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "[variables('cosmosContainerName')]",
+          "indexingPolicy": {
+            "indexingMode": "consistent",
+            "automatic": true,
+            "includedPaths": [
+              {
+                "path": "/*"
+              }
+            ],
+            "excludedPaths": [
+              {
+                "path": "/\"_etag\"/?"
+              }
+            ]
+          },
+          "partitionKey": {
+            "paths": [
+              "/type"
+            ],
+            "kind": "Hash"
+          },
+          "uniqueKeyPolicy": {
+            "uniqueKeys": []
+          },
+          "conflictResolutionPolicy": {
+            "mode": "LastWriterWins",
+            "conflictResolutionPath": "/_ts"
+          }
+        },
+        "options": {}
       }
     },
     {
@@ -148,7 +221,7 @@
             },
             {
               "name": "FUNCTIONS_EXTENSION_VERSION",
-              "value": "~2"
+              "value": "~3"
             },
             {
               "name": "WEBSITE_NODE_DEFAULT_VERSION",
@@ -167,36 +240,24 @@
               "value": "[reference(resourceId(variables('sharedResourceGroupName'), 'microsoft.insights/components/', variables('appInsightsName')), '2015-05-01').InstrumentationKey]"
             },
             {
-              "name": "SPI_Entities__TableStorageConnectionString",
+              "name": "SPI_Sync__QueueConnectionString",
               "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]"
             },
             {
-              "name": "SPI_Entities__TableStorageTableName",
-              "value": "entities"
+              "name": "SPI_Data__CosmosDbUri",
+              "value": ""
             },
             {
-              "name": "SPI_Links__TableStorageConnectionString",
-              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]"
+              "name": "SPI_Data__CosmosDbKey",
+              "value": ""
             },
             {
-              "name": "SPI_Links__TableStorageTableName",
-              "value": "links"
+              "name": "SPI_Data__DatabaseName",
+              "value": ""
             },
             {
-              "name": "SPI_Queue__StorageQueueConnectionString",
-              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]"
-            },
-            {
-              "name": "SPI_Search__AzureCognitiveSearchServiceName",
-              "value": "[variables('searchServiceName')]"
-            },
-            {
-              "name": "SPI_Search__AzureCognitiveSearchKey",
-              "value": "[listAdminKeys(variables('searchServiceId'), '2015-08-19').PrimaryKey]"
-            },
-            {
-              "name": "SPI_Search__IndexName",
-              "value": "spi-registered-entities"
+              "name": "SPI_Data__ContainerName",
+              "value": ""
             }
           ],
           "ipSecurityRestrictions": [
