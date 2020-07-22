@@ -62,6 +62,7 @@
     "cosmosAccountName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-cms-01')]",
     "cosmosDatabaseName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-cdb-01')]",
     "cosmosContainerName": "registered-entities",
+    "cosmosAccountId": "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName'))]",
     "storageAccountName": "[toLower(concat(variables('namePrefix'), parameters('appName')))]",
     "storageAccountId": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
     "functionAppName": "[concat(variables('namePrefix'), '-', parameters('appName'), '-fa-01')]",
@@ -245,19 +246,19 @@
             },
             {
               "name": "SPI_Data__CosmosDbUri",
-              "value": ""
+              "value": "[concat('https://', variables('cosmosAccountName'), '.documents.azure.com/')]"
             },
             {
               "name": "SPI_Data__CosmosDbKey",
-              "value": ""
+              "value": "listKeys(variables('cosmosAccountId'),'2020-04-01').primaryMasterKey"
             },
             {
               "name": "SPI_Data__DatabaseName",
-              "value": ""
+              "value": "[variables('cosmosDatabaseName')]"
             },
             {
               "name": "SPI_Data__ContainerName",
-              "value": ""
+              "value": "[variables('cosmosContainerName')]"
             }
           ],
           "ipSecurityRestrictions": [
