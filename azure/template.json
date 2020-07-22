@@ -250,7 +250,7 @@
             },
             {
               "name": "SPI_Data__CosmosDbKey",
-              "value": "listKeys(variables('cosmosAccountId'),'2020-04-01').primaryMasterKey"
+              "value": "[listKeys(variables('cosmosAccountId'),'2020-04-01').primaryMasterKey]"
             },
             {
               "name": "SPI_Data__DatabaseName",
