@@ -47,6 +47,8 @@ ProjectSection(SolutionItems) = preProject
 	..\eventing\SubscribeToEvent.ps1 = ..\eventing\SubscribeToEvent.ps1
 EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests", "Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests\Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests.csproj", "{FB4E68D2-8D21-4362-92CB-3C707D282863}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +95,10 @@ Global
 		{34584C89-7D70-4657-8FCA-4386F3D5666E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34584C89-7D70-4657-8FCA-4386F3D5666E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34584C89-7D70-4657-8FCA-4386F3D5666E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB4E68D2-8D21-4362-92CB-3C707D282863}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB4E68D2-8D21-4362-92CB-3C707D282863}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB4E68D2-8D21-4362-92CB-3C707D282863}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB4E68D2-8D21-4362-92CB-3C707D282863}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5745BAAB-7EB5-4403-B670-D545CC60C638} = {DBE4D18B-6BAC-4EB8-86E7-3E7F531E403F}
@@ -103,5 +109,6 @@ Global
 		{F142BE59-A841-48C6-9972-5345F7042E89} = {30B4769D-3F1D-40F6-B91A-E12FF4DAF682}
 		{77FD5357-89A1-4BFE-BFD7-96F08FF2A2BD} = {30B4769D-3F1D-40F6-B91A-E12FF4DAF682}
 		{C442C3DB-FE98-4CF0-A75B-6B17AEB731E4} = {30B4769D-3F1D-40F6-B91A-E12FF4DAF682}
+		{FB4E68D2-8D21-4362-92CB-3C707D282863} = {DBE4D18B-6BAC-4EB8-86E7-3E7F531E403F}
 	EndGlobalSection
 EndGlobal
