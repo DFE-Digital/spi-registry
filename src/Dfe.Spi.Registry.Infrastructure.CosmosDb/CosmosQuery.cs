@@ -3,98 +3,195 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using Dfe.Spi.Common.Extensions;
 using Dfe.Spi.Common.Models;
-using Dfe.Spi.Registry.Domain;
 
 namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 {
     internal class CosmosQuery
     {
-
-        private static readonly ReadOnlyDictionary<DataOperator, string> SimpleOperatorMapping =
+        private static readonly ReadOnlyDictionary<DataOperator, string> ComparisonOperatorMapping =
             new ReadOnlyDictionary<DataOperator, string>(new Dictionary<DataOperator, string>
             {
-                {DataOperator.Equals, "="},
                 {DataOperator.GreaterThan, ">"},
                 {DataOperator.LessThan, "<"},
                 {DataOperator.GreaterThanOrEqualTo, ">="},
                 {DataOperator.LessThanOrEqualTo, "<="},
             });
 
-        private static readonly ReadOnlyDictionary<string, Type> EntityPropertyTypes =
+        private static readonly DataOperator[] ValidOperatorsForNumericTypes = new[]
+        {
+            DataOperator.Between,
+            DataOperator.Equals,
+            DataOperator.GreaterThan,
+            DataOperator.GreaterThanOrEqualTo,
+            DataOperator.LessThan,
+            DataOperator.LessThanOrEqualTo,
+            DataOperator.In,
+            DataOperator.IsNull,
+            DataOperator.IsNotNull,
+        };
+
+        private static readonly DataOperator[] ValidOperatorsForDateTypes = new[]
+        {
+            DataOperator.Between,
+            DataOperator.Equals,
+            DataOperator.GreaterThan,
+            DataOperator.GreaterThanOrEqualTo,
+            DataOperator.LessThan,
+            DataOperator.LessThanOrEqualTo,
+            DataOperator.IsNull,
+            DataOperator.IsNotNull,
+        };
+
+        private static readonly DataOperator[] ValidOperatorsForStringTypes = new[]
+        {
+            DataOperator.Equals,
+            DataOperator.Contains,
+            DataOperator.In,
+            DataOperator.IsNull,
+            DataOperator.IsNotNull,
+        };
+
+        private static readonly ReadOnlyDictionary<string, Type> SearchablePropertyTypes =
             new ReadOnlyDictionary<string, Type>(
-                typeof(Entity)
+                typeof(CosmosRegisteredEntity)
                     .GetProperties()
+                    .Where(p => p.Name.StartsWith("Searchable"))
                     .ToDictionary(p => p.Name, p => p.PropertyType));
 
-        private static readonly ReadOnlyDictionary<string, Type> RegisteredEntityPropertyTypes =
-            new ReadOnlyDictionary<string, Type>(
-                typeof(RegisteredEntity)
-                    .GetProperties()
-                    .Where(p => p.Name != "Entities" && p.Name != "Links")
-                    .ToDictionary(p => p.Name, p => p.PropertyType));
-
-        
-        private StringBuilder _query = new StringBuilder();
+        private readonly CosmosCombinationOperator _combinationOperator;
+        private readonly StringBuilder _whereClause;
         private int? _skip;
         private int? _take;
 
-        public CosmosQuery(CosmosCombinationOperator combinationOperator)
+        internal CosmosQuery() : this(CosmosCombinationOperator.And)
         {
-            CombinationOperator = combinationOperator;
         }
 
-        public CosmosCombinationOperator CombinationOperator { get; }
-
-        public CosmosQuery AddEntityCondition(string field, DataOperator @operator, string value)
+        internal CosmosQuery(CosmosCombinationOperator combinationOperator)
         {
-            var property = EntityPropertyTypes.SingleOrDefault(p => p.Key.Equals(field, StringComparison.InvariantCultureIgnoreCase));
-            var fieldType = property.Value;
-            field = property.Key;
+            _combinationOperator = combinationOperator;
+            _whereClause = new StringBuilder();
+        }
 
-            var condition = GetCondition("e", field, fieldType, @operator, value);
+        internal virtual CosmosQuery AddCondition(string field, DataOperator @operator, string value)
+        {
+            var property = GetSearchableProperty(field);
+            var propertyName = property.Key;
+            var propertyType = property.Value;
 
-            AppendToQuery(condition);
+            EnsureOperatorIsValidForProperty(@operator, propertyName, propertyType);
+
+            if (_whereClause.Length > 0)
+            {
+                _whereClause.Append($" {_combinationOperator.ToString().ToUpper()} ");
+            }
+
+            switch (@operator)
+            {
+                case DataOperator.Equals:
+                    _whereClause.Append($"ARRAY_CONTAINS(re.{propertyName}, {GetValueForQuery(value, propertyType)})");
+                    break;
+                case DataOperator.Contains:
+                    _whereClause.Append($"EXISTS (SELECT VALUE v FROM v IN re.{propertyName} WHERE CONTAINS(v, {GetValueForQuery(value, propertyType)}))");
+                    break;
+                case DataOperator.GreaterThan:
+                case DataOperator.GreaterThanOrEqualTo:
+                case DataOperator.LessThan:
+                case DataOperator.LessThanOrEqualTo:
+                    _whereClause.Append(
+                        $"EXISTS (SELECT VALUE v FROM v IN re.{propertyName} WHERE v {ComparisonOperatorMapping[@operator]} {GetValueForQuery(value, propertyType)})");
+                    break;
+                case DataOperator.IsNull:
+                    _whereClause.Append($"ARRAY_LENGTH(re.{propertyName}) = 0");
+                    break;
+                case DataOperator.IsNotNull:
+                    _whereClause.Append($"ARRAY_LENGTH(re.{propertyName}) > 0");
+                    break;
+                case DataOperator.Between:
+                    var bounds = value.Split(new[] {" to "}, StringSplitOptions.RemoveEmptyEntries);
+                    if (bounds.Length != 2)
+                    {
+                        throw new ArgumentException($"A between query must be in the format of '{{lower-bound}} to {{upper-bound}}', but received {value}");
+                    }
+
+                    _whereClause.Append($"EXISTS (SELECT VALUE v FROM v IN re.{propertyName} " +
+                                        $"WHERE v >= {GetValueForQuery(bounds[0], propertyType)} AND v <= {GetValueForQuery(bounds[1], propertyType)})");
+                    break;
+                case DataOperator.In:
+                    var group = value
+                        .Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(v => $"ARRAY_CONTAINS(re.{propertyName}, {GetValueForQuery(v.Trim(), propertyType)})")
+                        .Aggregate((x, y) => $"{x} OR {y}");
+                    _whereClause.Append($"({group})");
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(@operator));
+            }
 
             return this;
         }
 
-        public CosmosQuery AddRegisteredEntityCondition(string field, DataOperator @operator, string value)
+        internal virtual CosmosQuery AddTypeCondition(string type)
         {
-            var property = RegisteredEntityPropertyTypes.SingleOrDefault(p => p.Key.Equals(field, StringComparison.InvariantCultureIgnoreCase));
-            var fieldType = property.Value;
-            field = property.Key;
+            if (_whereClause.Length > 0)
+            {
+                _whereClause.Append($" {_combinationOperator.ToString().ToUpper()} ");
+            }
 
-            var condition = GetCondition("c", field, fieldType, @operator, value);
-
-            AppendToQuery(condition);
+            _whereClause.Append($"re.type = '{type.ToLower()}'");
 
             return this;
         }
 
-        public CosmosQuery AddGroup(CosmosQuery group)
+        internal virtual CosmosQuery AddSourceSystemIdCondition(string sourceSystemName, string sourceSystemId)
         {
-            AppendToQuery($"({group._query})");
+            if (_whereClause.Length > 0)
+            {
+                _whereClause.Append($" {_combinationOperator.ToString().ToUpper()} ");
+            }
+
+            _whereClause.Append($"ARRAY_CONTAINS(re.searchableSourceSystemIdentifiers, '{sourceSystemName.ToLower()}:{sourceSystemId.ToLower()}')");
+
+            return this;
+        }
+
+        internal virtual CosmosQuery AddPointInTimeCondition(DateTime pointInTime)
+        {
+            if (_whereClause.Length > 0)
+            {
+                _whereClause.Append($" {_combinationOperator.ToString().ToUpper()} ");
+            }
+
+            _whereClause.Append($"(re.validFrom <= '{pointInTime.ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z' " +
+                                $"AND (ISNULL(re.validTo) OR re.validTo >= '{pointInTime.ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z'))");
+
+            return this;
+        }
+
+        internal virtual CosmosQuery AddGroup(CosmosQuery group)
+        {
+            if (_whereClause.Length > 0)
+            {
+                _whereClause.Append($" {_combinationOperator.ToString().ToUpper()} ");
+            }
             
+            _whereClause.Append($"({group._whereClause})");
+
             return this;
         }
 
-        public CosmosQuery AddPointInTimeConditions(DateTime pointInTime)
-        {
-            return this
-                .AddRegisteredEntityCondition("validFrom", DataOperator.LessThanOrEqualTo, $"{pointInTime.ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z")
-                .AddGroup(new CosmosQuery(CosmosCombinationOperator.Or)
-                    .AddRegisteredEntityCondition("validTo", DataOperator.IsNull, null)
-                    .AddRegisteredEntityCondition("validTo", DataOperator.GreaterThan, $"{pointInTime.ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z"));
-        }
-
-        public CosmosQuery TakeResultsBetween(int skip, int take)
+        internal virtual CosmosQuery TakeResultsBetween(int skip, int take)
         {
             _skip = skip;
             _take = take;
             return this;
+        }
+
+
+        internal virtual string ToString(bool countQuery)
+        {
+            return ToString(countQuery, !countQuery);
         }
 
         public override string ToString()
@@ -102,118 +199,79 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             return ToString(false);
         }
 
-        public string ToString(bool forCount)
+        private string ToString(bool countQuery, bool includeOrderAndSkipTake)
         {
-            var querySelection = forCount ? "COUNT(c)" : "*";
-            var fullQuery = $"SELECT {querySelection} FROM c WHERE EXISTS (SELECT VALUE e FROM e IN c.entities WHERE {_query}) ORDER BY c.id";
-            
-            if (_skip.HasValue && _take.HasValue)
-            {
-                return $"{fullQuery} OFFSET {_skip.Value} LIMIT {_take.Value}";
-            }
-
-            return fullQuery;
-        }
-
-        public CosmosQuery Clone()
-        {
-            var clone = new CosmosQuery(CombinationOperator);
-            clone._query = _query;
-            clone._skip = _skip;
-            clone._take = _take;
-            return clone;
+            var select = countQuery ? $"SELECT COUNT(1)" : "SELECT *";
+            var orderBy = includeOrderAndSkipTake ? " ORDER BY re.id" : String.Empty;
+            var offsetLimit = includeOrderAndSkipTake && _skip.HasValue ? $" OFFSET {_skip} LIMIT {_take}" : String.Empty;
+            return $"{select} FROM re WHERE {_whereClause}{orderBy}{offsetLimit}";
         }
 
 
-        private string GetCondition(string tableAlias, string field, Type fieldType, DataOperator @operator, string value)
+        private KeyValuePair<string, Type> GetSearchableProperty(string propertyName)
         {
-            var camelCaseField = field.Substring(0, 1).ToLower() + field.Substring(1);
-            var aliasedField = $"{tableAlias}.{camelCaseField}";
-
-            // Simple conditions (Equals, GreaterThan, etc)
-            if (SimpleOperatorMapping.ContainsKey(@operator))
+            if (!propertyName.StartsWith("Searchable", StringComparison.InvariantCultureIgnoreCase))
             {
-                var cosmosOperator = SimpleOperatorMapping[@operator];
-                return fieldType == typeof(string)
-                    ? $"UPPER({aliasedField}) {cosmosOperator} {FormatValueForQuery(value, fieldType)}"
-                    : $"{aliasedField} {cosmosOperator} {FormatValueForQuery(value, fieldType)}";
+                propertyName = $"Searchable{propertyName}";
             }
 
-            // Null check conditions
-            if (@operator == DataOperator.IsNull)
+            var kvp = SearchablePropertyTypes.SingleOrDefault(k => k.Key.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase));
+            if (string.IsNullOrEmpty(kvp.Key))
             {
-                return $"IS_NULL({aliasedField})";
+                throw new ArgumentOutOfRangeException(nameof(propertyName),
+                    $"Unrecognised property name {propertyName} on type {nameof(CosmosRegisteredEntity)}");
             }
 
-            if (@operator == DataOperator.IsNotNull)
-            {
-                return $"IS_NULL({aliasedField}) = false";
-            }
-
-            // Between
-            if (@operator == DataOperator.Between)
-            {
-                var bounds = value.Split(new[] {" to "}, StringSplitOptions.RemoveEmptyEntries);
-
-                if (bounds.Length != 2)
-                {
-                    throw new ArgumentException($"A between query must be in the format of '{{lower-bound}} to {{upper-bound}}', but received {value}");
-                }
-
-                return $"{aliasedField} BETWEEN {FormatValueForQuery(bounds[0], fieldType)} AND {FormatValueForQuery(bounds[1], fieldType)}";
-            }
-
-            // Contains
-            if (@operator == DataOperator.Contains)
-            {
-                // Contains only applies to strings
-                return $"CONTAINS(UPPER({aliasedField}), '{value.ToUpper()}')";
-            }
-
-            // In
-            if (@operator == DataOperator.In)
-            {
-                var values = value
-                    .Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(x => FormatValueForQuery(x.Trim(), fieldType))
-                    .Aggregate((x, y) => $"{x}, {y}");
-                return $"{aliasedField} IN ({values})";
-            }
-
-            throw new NotImplementedException($"Cannot support operator {@operator}");
+            var camelCaseKey = kvp.Key.Substring(0, 1).ToLower() + kvp.Key.Substring(1);
+            return new KeyValuePair<string, Type>(camelCaseKey, kvp.Value);
         }
 
-        private string FormatValueForQuery(string value, Type fieldType)
+        private void EnsureOperatorIsValidForProperty(DataOperator @operator, string propertyName, Type propertyType)
         {
-            if (fieldType == typeof(short) || fieldType == typeof(int) || fieldType == typeof(long) ||
-                fieldType == typeof(short?) || fieldType == typeof(int?) || fieldType == typeof(long?))
+            var validOperators = ValidOperatorsForStringTypes;
+            if (propertyType == typeof(long[]))
+            {
+                validOperators = ValidOperatorsForNumericTypes;
+            }
+
+            if (propertyType == typeof(DateTime[]))
+            {
+                validOperators = ValidOperatorsForDateTypes;
+            }
+
+            var operatorIsValid = validOperators.Any(x => x == @operator);
+            if (operatorIsValid)
+            {
+                return;
+            }
+
+            string validOperatorsString;
+            if (validOperators.Length == 1)
+            {
+                validOperatorsString = validOperators[0].ToString();
+            }
+            else
+            {
+                var validOperatorsStart =
+                    validOperators
+                        .Select(x => x.ToString())
+                        .Take(validOperators.Length - 1)
+                        .Aggregate((x, y) => $"{x}, {y}");
+                validOperatorsString = $"{validOperatorsStart} and {validOperators[validOperators.Length - 1].ToString()}";
+            }
+
+            throw new ArgumentException($"Operator {@operator.ToString()} is not valid for field {propertyName}. Valid operators are {validOperatorsString}");
+        }
+
+        private string GetValueForQuery(string value, Type dataType)
+        {
+            if (dataType == typeof(long[]))
             {
                 return value;
             }
 
-            if (fieldType == typeof(DateTime) || fieldType == typeof(DateTime?))
-            {
-                return $"'{value.ToDateTime().ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z'";
-            }
-
             // Treat everything else as a string
-            return $"'{value.ToUpper()}'";
+            return $"'{value?.ToLower()}'";
         }
-
-        private void AppendToQuery(string condition)
-        {
-            if (_query.Length > 0)
-            {
-                _query.Append($" {CombinationOperator.ToString().ToUpper()} ");
-            }
-
-            _query.Append(condition);
-        }
-    }
-
-    internal enum CosmosCombinationOperator
-    {
-        And,
-        Or
     }
 }
