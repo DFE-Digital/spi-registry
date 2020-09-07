@@ -147,7 +147,7 @@
           },
           "partitionKey": {
             "paths": [
-              "/type"
+              "/partitionableId"
             ],
             "kind": "Hash"
           },
