@@ -155,15 +155,23 @@ namespace Dfe.Spi.Registry.Application.Matching
             MatchingProfile profile,
             CancellationToken cancellationToken)
         {
+            var searchFilter = ruleset.Conditions
+                .Select(condition => ConvertRulesetConditionToSearchFilter(condition, sourceEntity))
+                .Where(filter => filter != null)
+                .ToArray();
+            if (searchFilter.Length == 0)
+            {
+                _logger.Info($"No conditions could be fulfilled by source entity {sourceEntity} when finding candidates for profile {profile.Name} and ruleset {ruleset.Name}");
+                return new MatchResultItem[0];
+            }
+
             var searchRequest = new SearchRequest
             {
                 Groups = new[]
                 {
                     new SearchRequestGroup
                     {
-                        Filter = ruleset.Conditions
-                            .Select(condition => ConvertRulesetConditionToSearchFilter(condition, sourceEntity))
-                            .ToArray(),
+                        Filter = searchFilter,
                         CombinationOperator = "and",
                     },
                 },
@@ -199,11 +207,13 @@ namespace Dfe.Spi.Registry.Application.Matching
             var value = GetSourceValue(sourceEntity, condition.SourceAttribute);
             if (value == null)
             {
-                return new SearchRequestFilter
-                {
-                    Field = condition.CandidateAttribute,
-                    Operator = DataOperator.IsNull,
-                };
+                return condition.MatchNulls
+                    ? new SearchRequestFilter
+                    {
+                        Field = condition.CandidateAttribute,
+                        Operator = DataOperator.IsNull,
+                    }
+                    : null;
             }
 
             return new SearchRequestFilter
