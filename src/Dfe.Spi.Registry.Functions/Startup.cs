@@ -73,6 +73,7 @@ namespace Dfe.Spi.Registry.Functions
         private void AddData(IServiceCollection services)
         {
             services
+                .AddSingleton<CosmosDbConnection>()
                 .AddScoped<IRepository, CosmosDbRepository>();
         }
         
