@@ -39,6 +39,7 @@ namespace Dfe.Spi.Registry.Infrastructure.StaticData.Matching
                             {
                                 SourceAttribute = "Urn",
                                 CandidateAttribute = "Urn",
+                                MatchNulls = false,
                             },
                         }
                     },
@@ -52,6 +53,7 @@ namespace Dfe.Spi.Registry.Infrastructure.StaticData.Matching
                             {
                                 SourceAttribute = "Ukprn",
                                 CandidateAttribute = "Ukprn",
+                                MatchNulls = false,
                             },
                         }
                     },
@@ -80,6 +82,7 @@ namespace Dfe.Spi.Registry.Infrastructure.StaticData.Matching
                             {
                                 SourceAttribute = "ManagementGroupCode",
                                 CandidateAttribute = "ManagementGroupCode",
+                                MatchNulls = false,
                             },
                         }
                     },
