@@ -54,7 +54,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests.CosmosDbRepositoryT
             _loggerMock = new Mock<ILoggerWrapper>();
 
             _repository = new CosmosDbRepository(
-                _containerMock.Object,
+                new CosmosDbConnection(_containerMock.Object), 
                 _mapperMock.Object,
                 _queryFactoryMock.Object,
                 _loggerMock.Object);

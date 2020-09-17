@@ -14,25 +14,25 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 {
     public class CosmosDbRepository : IRepository
     {
-        private readonly Container _container;
+        private readonly CosmosDbConnection _connection;
         private readonly IMapper _mapper;
         private readonly Func<CosmosCombinationOperator, CosmosQuery> _queryFactory;
         private readonly ILoggerWrapper _logger;
 
         internal CosmosDbRepository(
-            Container container, 
+            CosmosDbConnection connection, 
             IMapper mapper, 
             Func<CosmosCombinationOperator, CosmosQuery> queryFactory, 
             ILoggerWrapper logger)
         {
-            _container = container;
+            _connection = connection;
             _mapper = mapper;
             _queryFactory = queryFactory;
             _logger = logger;
         }
 
-        public CosmosDbRepository(DataConfiguration configuration, ILoggerWrapper logger)
-            : this(GetContainerFromConfiguration(configuration), new Mapper(), (@operator) => new CosmosQuery(@operator), logger)
+        public CosmosDbRepository(CosmosDbConnection connection, ILoggerWrapper logger)
+            : this(connection, new Mapper(), (@operator) => new CosmosQuery(@operator), logger)
         {
         }
 
@@ -40,7 +40,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
         public async Task StoreAsync(RegisteredEntity registeredEntity, CancellationToken cancellationToken)
         {
             var cosmosEntity = _mapper.Map(registeredEntity);
-            await _container.UpsertItemAsync(cosmosEntity, new PartitionKey(cosmosEntity.PartitionableId), null, cancellationToken);
+            await _connection.Container.UpsertItemAsync(cosmosEntity, new PartitionKey(cosmosEntity.PartitionableId), null, cancellationToken);
         }
 
         public async Task StoreAsync(
@@ -57,7 +57,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 .ToArray();
             foreach (var partition in partitionedEntities)
             {
-                var batch = _container.CreateTransactionalBatch(new PartitionKey(partition[0].Entity.PartitionableId));
+                var batch = _connection.Container.CreateTransactionalBatch(new PartitionKey(partition[0].Entity.PartitionableId));
                 foreach (var update in partition)
                 {
                     if (update.ToDelete)
@@ -129,21 +129,6 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 TotalNumberOfRecords = count,
             };
         }
-
-        private static Container GetContainerFromConfiguration(DataConfiguration configuration)
-        {
-            var client = new CosmosClient(
-                configuration.CosmosDbUri,
-                configuration.CosmosDbKey,
-                new CosmosClientOptions
-                {
-                    SerializerOptions = new CosmosSerializationOptions
-                    {
-                        PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
-                    },
-                });
-            return client.GetDatabase(configuration.DatabaseName).GetContainer(configuration.ContainerName);
-        }
         
         private async Task<CosmosRegisteredEntity[]> RunQuery(CosmosQuery query, CancellationToken cancellationToken)
         {
@@ -162,7 +147,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
         private async Task<T[]> RunQuery<T>(QueryDefinition query, CancellationToken cancellationToken)
         {
             _logger.Debug($"Running CosmosDB query: {query.QueryText}");
-            var iterator = _container.GetItemQueryIterator<T>(query);
+            var iterator = _connection.Container.GetItemQueryIterator<T>(query);
             var results = new List<T>();
 
             while (iterator.HasMoreResults)
