@@ -57,27 +57,15 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 .ToArray();
             foreach (var partition in partitionedEntities)
             {
-                var batch = _connection.Container.CreateTransactionalBatch(new PartitionKey(partition[0].Entity.PartitionableId));
-                foreach (var update in partition)
-                {
-                    if (update.ToDelete)
-                    {
-                        batch = batch.DeleteItem(update.Entity.Id);
-                    }
-                    else
-                    {
-                        batch = batch.UpsertItem(update.Entity);
-                    }
-                }
+                var toUpsert = partition.Where(u => !u.ToDelete).Select(u => u.Entity).ToArray();
+                var toDelete = partition.Where(u => !u.ToDelete).Select(u => u.Entity.Id).ToArray();
 
-                using (var batchResponse = await batch.ExecuteAsync(cancellationToken))
-                {
-                    if (!batchResponse.IsSuccessStatusCode)
-                    {
-                        throw new Exception(
-                            $"Failed to store batch of entities in {partition[0].Entity.Type} (Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
-                    }
-                }
+                await _connection.MakeTransactionalUpdateAsync(
+                    partition[0].Entity.PartitionableId,
+                    toUpsert,
+                    toDelete,
+                    _logger,
+                    cancellationToken);
             }
         }
 

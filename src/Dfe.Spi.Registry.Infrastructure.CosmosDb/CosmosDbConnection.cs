@@ -49,6 +49,37 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             }, logger, cancellationToken);
         }
 
+        public async Task MakeTransactionalUpdateAsync<T>(
+            string partitionKey,
+            T[] entitiesToUpsert,
+            string[] idsToDelete,
+            ILoggerWrapper logger,
+            CancellationToken cancellationToken)
+        {
+            await ExecuteContainerActionAsync(async () =>
+            {
+                var batch = Container.CreateTransactionalBatch(new PartitionKey(partitionKey));
+                foreach (var entity in entitiesToUpsert)
+                {
+                    batch.UpsertItem(entity);
+                }
+
+                foreach (var id in idsToDelete)
+                {
+                    batch.DeleteItem(id);
+                }
+
+                using (var batchResponse = await batch.ExecuteAsync(cancellationToken))
+                {
+                    if (!batchResponse.IsSuccessStatusCode)
+                    {
+                        throw new Exception(
+                            $"Failed to store batch of entities in {partitionKey} (Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
+                    }
+                }
+            }, logger, cancellationToken);
+        }
+
         private static Container GetContainerFromConfig(DataConfiguration configuration)
         {
             var client = new CosmosClient(
@@ -64,6 +95,14 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             return client.GetDatabase(configuration.DatabaseName).GetContainer(configuration.ContainerName);
         }
 
+        private async Task ExecuteContainerActionAsync(Func<Task> asyncAction, ILoggerWrapper logger, CancellationToken cancellationToken)
+        {
+            await ExecuteContainerActionAsync<object>(async () =>
+            {
+                await asyncAction();
+                return null;
+            }, logger, cancellationToken);
+        }
         private async Task<T> ExecuteContainerActionAsync<T>(Func<Task<T>> asyncAction, ILoggerWrapper logger, CancellationToken cancellationToken)
         {
             var attempt = 0;
