@@ -57,27 +57,15 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 .ToArray();
             foreach (var partition in partitionedEntities)
             {
-                var batch = _connection.Container.CreateTransactionalBatch(new PartitionKey(partition[0].Entity.PartitionableId));
-                foreach (var update in partition)
-                {
-                    if (update.ToDelete)
-                    {
-                        batch = batch.DeleteItem(update.Entity.Id);
-                    }
-                    else
-                    {
-                        batch = batch.UpsertItem(update.Entity);
-                    }
-                }
+                var toUpsert = partition.Where(u => !u.ToDelete).Select(u => u.Entity).ToArray();
+                var toDelete = partition.Where(u => !u.ToDelete).Select(u => u.Entity.Id).ToArray();
 
-                using (var batchResponse = await batch.ExecuteAsync(cancellationToken))
-                {
-                    if (!batchResponse.IsSuccessStatusCode)
-                    {
-                        throw new Exception(
-                            $"Failed to store batch of entities in {partition[0].Entity.Type} (Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
-                    }
-                }
+                await _connection.MakeTransactionalUpdateAsync(
+                    partition[0].Entity.PartitionableId,
+                    toUpsert,
+                    toDelete,
+                    _logger,
+                    cancellationToken);
             }
         }
 
@@ -133,30 +121,15 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
         private async Task<CosmosRegisteredEntity[]> RunQuery(CosmosQuery query, CancellationToken cancellationToken)
         {
             var queryDefinition = new QueryDefinition(query.ToString());
-            return await RunQuery<CosmosRegisteredEntity>(queryDefinition, cancellationToken);
+            return await _connection.RunQueryAsync<CosmosRegisteredEntity>(queryDefinition, _logger, cancellationToken);
         }
 
         private async Task<long> RunCountQuery(CosmosQuery query, CancellationToken cancellationToken)
         {
             var queryDefinition = new QueryDefinition(query.ToString(true));
-            var results = await RunQuery<JObject>(queryDefinition, cancellationToken);
+            var results = await _connection.RunQueryAsync<JObject>(queryDefinition, _logger, cancellationToken);
 
             return (long) ((JValue) results[0]["$1"]).Value;
-        }
-
-        private async Task<T[]> RunQuery<T>(QueryDefinition query, CancellationToken cancellationToken)
-        {
-            _logger.Debug($"Running CosmosDB query: {query.QueryText}");
-            var iterator = _connection.Container.GetItemQueryIterator<T>(query);
-            var results = new List<T>();
-
-            while (iterator.HasMoreResults)
-            {
-                var batch = await iterator.ReadNextAsync(cancellationToken);
-                results.AddRange(batch);
-            }
-
-            return results.ToArray();
         }
     }
 }
