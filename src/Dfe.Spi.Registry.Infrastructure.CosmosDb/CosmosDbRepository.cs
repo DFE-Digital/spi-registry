@@ -133,30 +133,15 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
         private async Task<CosmosRegisteredEntity[]> RunQuery(CosmosQuery query, CancellationToken cancellationToken)
         {
             var queryDefinition = new QueryDefinition(query.ToString());
-            return await RunQuery<CosmosRegisteredEntity>(queryDefinition, cancellationToken);
+            return await _connection.RunQueryAsync<CosmosRegisteredEntity>(queryDefinition, _logger, cancellationToken);
         }
 
         private async Task<long> RunCountQuery(CosmosQuery query, CancellationToken cancellationToken)
         {
             var queryDefinition = new QueryDefinition(query.ToString(true));
-            var results = await RunQuery<JObject>(queryDefinition, cancellationToken);
+            var results = await _connection.RunQueryAsync<JObject>(queryDefinition, _logger, cancellationToken);
 
             return (long) ((JValue) results[0]["$1"]).Value;
-        }
-
-        private async Task<T[]> RunQuery<T>(QueryDefinition query, CancellationToken cancellationToken)
-        {
-            _logger.Debug($"Running CosmosDB query: {query.QueryText}");
-            var iterator = _connection.Container.GetItemQueryIterator<T>(query);
-            var results = new List<T>();
-
-            while (iterator.HasMoreResults)
-            {
-                var batch = await iterator.ReadNextAsync(cancellationToken);
-                results.AddRange(batch);
-            }
-
-            return results.ToArray();
         }
     }
 }
