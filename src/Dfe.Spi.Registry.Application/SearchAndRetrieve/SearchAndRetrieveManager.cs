@@ -12,6 +12,7 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
     {
         Task<PublicSearchResult> SearchAsync(SearchRequest request, string entityType, CancellationToken cancellationToken);
         Task<RegisteredEntity> RetrieveAsync(string entityType, string sourceSystemName, string sourceSystemId, DateTime pointInTime, CancellationToken cancellationToken);
+        Task<RegisteredEntity[]> RetrieveBatchAsync(EntityPointer[] entityPointers, DateTime pointInTime, CancellationToken cancellationToken);
     }
     
     public class SearchAndRetrieveManager : ISearchAndRetrieveManager
@@ -92,6 +93,12 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
         {
             var registeredEntity = await _repository.RetrieveAsync(entityType, sourceSystemName, sourceSystemId, pointInTime, cancellationToken);
             return registeredEntity;
+        }
+
+        public async Task<RegisteredEntity[]> RetrieveBatchAsync(EntityPointer[] entityPointers, DateTime pointInTime, CancellationToken cancellationToken)
+        {
+            var registeredEntities = await _repository.RetrieveBatchAsync(entityPointers, pointInTime, cancellationToken);
+            return registeredEntities;
         }
     }
 }
