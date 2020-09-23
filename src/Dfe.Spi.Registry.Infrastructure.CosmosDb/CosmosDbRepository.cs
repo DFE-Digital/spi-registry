@@ -82,6 +82,26 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             return results.SingleOrDefault();
         }
 
+        public async Task<RegisteredEntity[]> RetrieveBatchAsync(EntityPointer[] entityPointers, DateTime pointInTime, CancellationToken cancellationToken)
+        {
+            var pointersQuery = _queryFactory(CosmosCombinationOperator.Or);
+            foreach (var entityPointer in entityPointers)
+            {
+                var entityQuery = _queryFactory(CosmosCombinationOperator.And)
+                    .AddTypeCondition(entityPointer.EntityType)
+                    .AddSourceSystemIdCondition(entityPointer.SourceSystemName, entityPointer.SourceSystemId);
+                pointersQuery.AddGroup(entityQuery);
+            }
+
+            var batchQuery = _queryFactory(CosmosCombinationOperator.And)
+                .AddGroup(pointersQuery)
+                .AddPointInTimeCondition(pointInTime);
+            
+            var results = await RunQuery(batchQuery, cancellationToken);
+
+            return results.ToArray();
+        }
+
         public async Task<SearchResult> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken)
         {
             // Build the query

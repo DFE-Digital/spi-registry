@@ -56,6 +56,11 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
             return Task.FromResult(Clone(validAtPointInTime));
         }
 
+        public async Task<RegisteredEntity[]> RetrieveBatchAsync(EntityPointer[] entityPointers, DateTime pointInTime, CancellationToken cancellationToken)
+        {
+            return new RegisteredEntity[0]; //TODO: Query store
+        }
+
         public Task<SearchResult> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken)
         {
             var matcherFunc = SearchRequestToMatcherFunc(request);
