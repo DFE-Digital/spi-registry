@@ -3,7 +3,7 @@ using Dfe.Spi.Common.Models;
 
 namespace Dfe.Spi.Registry.Domain
 {
-    public class SearchRequest
+    public class SearchRequest : RequestResponseBase
     {
         public DateTime? PointInTime { get; set; }
         public SearchRequestGroup[] Groups { get; set; }

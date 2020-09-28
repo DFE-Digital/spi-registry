@@ -28,4 +28,8 @@
       <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.CosmosDb\Dfe.Spi.Registry.Infrastructure.CosmosDb.csproj" />
       <ProjectReference Include="..\Dfe.Spi.Registry.Infrastructure.StaticData\Dfe.Spi.Registry.Infrastructure.StaticData.csproj" />
     </ItemGroup>
+    <ItemGroup>
+      <None Remove="Schemas\search-entities-body.json" />
+      <EmbeddedResource Include="Schemas\search-entities-body.json" />
+    </ItemGroup>
 </Project>

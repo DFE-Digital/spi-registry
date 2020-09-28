@@ -30,6 +30,15 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
         
         public async Task<PublicSearchResult> SearchAsync(SearchRequest request, string entityType, CancellationToken cancellationToken)
         {
+            if (request.Take > 100)
+            {
+                throw new InvalidRequestException("Search request is invalid",
+                    new[]
+                    {
+                        $"request has invalid Take ({request.Take}). Must between 1 and 100 inclusive"
+                    });
+            }
+            
             if (request.Skip < 0)
             {
                 request.Skip = 0;

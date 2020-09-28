@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/group"
+      }
+    },
+    "combinationOperator": {
+      "type": "string",
+      "enum": ["and", "or"]
+    },
+    "skip": {
+      "type": "integer"
+    },
+    "take": {
+      "type": "integer"
+    },
+    "pointInTime": {
+      "type": "string"
+    }
+  },
+  "required": ["groups", "combinationOperator"],
+  "definitions": {
+    "group": {
+      "type": "object",
+      "properties": {
+        "filter": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/filter"
+          }
+        },
+        "combinationOperator": {
+          "type": "string",
+          "enum": ["and", "or"]
+        }
+      },
+      "required": ["filter", "combinationOperator"]
+    },
+    "filter": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "operator": {
+          "type": "string",
+          "enum": ["equals", "contains", "greaterThan", "greaterThanOrEqualTo", "lessThan", "lessThanOrEqualTo", "in", "isNull", "isNotNull", "between"]
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": ["field"]
+    }
+  }
+}
