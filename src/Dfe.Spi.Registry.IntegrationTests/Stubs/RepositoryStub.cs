@@ -83,6 +83,11 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
             return Task.FromResult(result);
         }
 
+        public string[] GetSearchableFieldNames()
+        {
+            throw new NotImplementedException();
+        }
+
         private RegisteredEntity GetRegisteredEntityRelevantAtPointInTime(IEnumerable<RegisteredEntity> entities, DateTime pointInTime)
         {
             var orderedResultsValidAtPointInTime = GetRegisteredEntitiesRelevantAtPointInTime(entities, pointInTime)

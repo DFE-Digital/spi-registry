@@ -19,34 +19,30 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
     {
         private readonly IRepository _repository;
         private readonly ILoggerWrapper _logger;
+        private readonly ISearchRequestValidator _searchRequestValidator;
 
-        public SearchAndRetrieveManager(
+        internal SearchAndRetrieveManager(
             IRepository repository,
-            ILoggerWrapper logger)
+            ILoggerWrapper logger,
+            ISearchRequestValidator searchRequestValidator)
         {
             _repository = repository;
             _logger = logger;
+            _searchRequestValidator = searchRequestValidator;
+        }
+        public SearchAndRetrieveManager(IRepository repository, ILoggerWrapper logger)
+            : this(repository, logger, new SearchRequestValidator(repository, logger))
+        {
         }
         
         public async Task<PublicSearchResult> SearchAsync(SearchRequest request, string entityType, CancellationToken cancellationToken)
         {
-            if (request.Take > 100)
+            var validationResult = _searchRequestValidator.Validate(request);
+            if (!validationResult.IsValid)
             {
-                throw new InvalidRequestException("Search request is invalid",
-                    new[]
-                    {
-                        $"request has invalid Take ({request.Take}). Must between 1 and 100 inclusive"
-                    });
+                throw new InvalidRequestException("Search request is invalid", validationResult.ValidationErrors);
             }
             
-            if (request.Skip < 0)
-            {
-                request.Skip = 0;
-            }
-            if (request.Take < 1)
-            {
-                request.Take = 1;
-            }
             if (!request.PointInTime.HasValue)
             {
                 request.PointInTime = DateTime.UtcNow;

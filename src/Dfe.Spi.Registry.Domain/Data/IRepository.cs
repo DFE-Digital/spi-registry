@@ -15,5 +15,7 @@ namespace Dfe.Spi.Registry.Domain.Data
         Task<RegisteredEntity[]> RetrieveBatchAsync(EntityPointer[] entityPointers, DateTime pointInTime, CancellationToken cancellationToken);
 
         Task<SearchResult> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken);
+
+        string[] GetSearchableFieldNames();
     }
 }
