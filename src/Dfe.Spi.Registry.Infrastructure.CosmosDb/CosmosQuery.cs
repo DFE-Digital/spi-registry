@@ -207,6 +207,13 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             return $"{select} FROM re WHERE {_whereClause}{orderBy}{offsetLimit}";
         }
 
+        internal static string[] GetSearchablePropertyNames()
+        {
+            return SearchablePropertyTypes.Keys
+                .Select(key => key.StartsWith("Searchable") ? key.Substring(10) : key)
+                .ToArray();
+        }
+
 
         private KeyValuePair<string, Type> GetSearchableProperty(string propertyName)
         {

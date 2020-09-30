@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Domain;
-using Dfe.Spi.Registry.Domain.Configuration;
 using Dfe.Spi.Registry.Domain.Data;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
@@ -137,7 +135,12 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 TotalNumberOfRecords = count,
             };
         }
-        
+
+        public string[] GetSearchableFieldNames()
+        {
+            return CosmosQuery.GetSearchablePropertyNames();
+        }
+
         private async Task<CosmosRegisteredEntity[]> RunQuery(CosmosQuery query, CancellationToken cancellationToken)
         {
             var queryDefinition = new QueryDefinition(query.ToString());
