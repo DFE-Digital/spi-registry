@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dfe.Spi.Common.Logging.Definitions;
@@ -49,8 +50,8 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
                 validationErrors.Add("request must have at least 1 group");
             }
 
-            var searchableFieldNames = _repository.GetSearchableFieldNames();
-            var searchableFieldsForMessage = AggregateStringArrayForDisplay(searchableFieldNames);
+            var searchableFields = _repository.GetSearchableFieldNames();
+            var searchableFieldsForMessage = AggregateStringArrayForDisplay(searchableFields.Keys.ToArray());
             for (var groupIndex = 0; groupIndex < request.Groups?.Length; groupIndex++)
             {
                 var group = request.Groups[groupIndex];
@@ -68,11 +69,23 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
                 for (var filterIndex = 0; filterIndex < group.Filter?.Length; filterIndex++)
                 {
                     var filter = group.Filter[filterIndex];
+                    var fieldName = searchableFields.Keys.SingleOrDefault(x => x.ToLower() == filter.Field?.ToLower());
 
-                    if (!searchableFieldNames.Any(x => x.ToLower() == filter.Field?.ToLower()))
+                    if (string.IsNullOrEmpty(fieldName))
                     {
                         validationErrors.Add($"filter at index {filterIndex} of group at index {groupIndex} has invalid field {filter.Field}. " +
                                              $"Valid values are {searchableFieldsForMessage}");
+                    }
+                    else
+                    {
+                        var dataType = searchableFields[fieldName];
+
+                        if ((TypeIsLong(dataType) && !ValueIsLong(filter.Value)) ||
+                            (TypeIsInt(dataType) && !ValueIsInt(filter.Value)))
+                        {
+                            validationErrors.Add($"filter at index {filterIndex} of group at index {groupIndex} has invalid field value. " +
+                                                 $"Must be a number");
+                        }
                     }
                 }
             }
@@ -99,6 +112,26 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
             }
 
             return message;
+        }
+
+        private bool TypeIsLong(Type dataType)
+        {
+            return dataType == typeof(long) ||
+                   dataType == typeof(long[]);
+        }
+        private bool ValueIsLong(string value)
+        {
+            return long.TryParse(value, out var parsed);
+        }
+
+        private bool TypeIsInt(Type dataType)
+        {
+            return dataType == typeof(int) ||
+                   dataType == typeof(int[]);
+        }
+        private bool ValueIsInt(string value)
+        {
+            return int.TryParse(value, out var parsed);
         }
     }
 

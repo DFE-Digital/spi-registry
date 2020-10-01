@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -136,7 +137,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             };
         }
 
-        public string[] GetSearchableFieldNames()
+        public IDictionary<string, Type> GetSearchableFieldNames()
         {
             return CosmosQuery.GetSearchablePropertyNames();
         }
