@@ -83,7 +83,7 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
             return Task.FromResult(result);
         }
 
-        public string[] GetSearchableFieldNames()
+        public IDictionary<string, Type> GetSearchableFieldNames()
         {
             throw new NotImplementedException();
         }

@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +18,6 @@ namespace Dfe.Spi.Registry.Domain.Data
 
         Task<SearchResult> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken);
 
-        string[] GetSearchableFieldNames();
+        IDictionary<string, Type> GetSearchableFieldNames();
     }
 }

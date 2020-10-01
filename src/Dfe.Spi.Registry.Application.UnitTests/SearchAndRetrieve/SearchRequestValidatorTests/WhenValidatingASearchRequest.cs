@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.Models;
 using Dfe.Spi.Registry.Application.SearchAndRetrieve;
@@ -20,7 +21,10 @@ namespace Dfe.Spi.Registry.Application.UnitTests.SearchAndRetrieve.SearchRequest
         {
             _repositoryMock = new Mock<IRepository>();
             _repositoryMock.Setup(r => r.GetSearchableFieldNames())
-                .Returns(new[] {"Name"});
+                .Returns(new Dictionary<string, Type>
+                {
+                    {"Name", typeof(string)},
+                });
 
             _loggerMock = new Mock<ILoggerWrapper>();
 
@@ -216,7 +220,8 @@ namespace Dfe.Spi.Registry.Application.UnitTests.SearchAndRetrieve.SearchRequest
 
             Assert.IsFalse(actual.IsValid);
             Assert.AreEqual(1, actual.ValidationErrors.Length);
-            Assert.AreEqual($"group at index 0 has invalid CombinationOperator ({request.Groups[0].CombinationOperator}). Valid values are and, or", actual.ValidationErrors[0]);
+            Assert.AreEqual($"group at index 0 has invalid CombinationOperator ({request.Groups[0].CombinationOperator}). Valid values are and, or",
+                actual.ValidationErrors[0]);
         }
 
         [Test]
@@ -249,7 +254,12 @@ namespace Dfe.Spi.Registry.Application.UnitTests.SearchAndRetrieve.SearchRequest
         public void ThenItShouldReturnInvalidResultIfGroupFilterHadInvalidField()
         {
             _repositoryMock.Setup(r => r.GetSearchableFieldNames())
-                .Returns(new[] {"Ukprn", "Urn", "LegalName"});
+                .Returns(new Dictionary<string, Type>
+                {
+                    {"Ukprn", typeof(long)},
+                    {"Urn", typeof(long)},
+                    {"LegalName", typeof(string)},
+                });
             var request = new SearchRequest
             {
                 Groups = new[]
@@ -278,7 +288,57 @@ namespace Dfe.Spi.Registry.Application.UnitTests.SearchAndRetrieve.SearchRequest
 
             Assert.IsFalse(actual.IsValid);
             Assert.AreEqual(1, actual.ValidationErrors.Length);
-            Assert.AreEqual("filter at index 0 of group at index 0 has invalid field Name. Valid values are Ukprn, Urn and LegalName", actual.ValidationErrors[0]);
+            Assert.AreEqual("filter at index 0 of group at index 0 has invalid field Name. Valid values are Ukprn, Urn and LegalName",
+                actual.ValidationErrors[0]);
+        }
+
+        [Test]
+        public void ThenItShouldReturnInvalidResultIfGroupFilterHadInvalidValueFieldDataType()
+        {
+            _repositoryMock.Setup(r => r.GetSearchableFieldNames())
+                .Returns(new Dictionary<string, Type>
+                {
+                    {"Ukprn", typeof(long[])},
+                    {"Urn", typeof(int[])},
+                });
+            var request = new SearchRequest
+            {
+                Groups = new[]
+                {
+                    new SearchRequestGroup
+                    {
+                        Filter = new[]
+                        {
+                            new SearchRequestFilter
+                            {
+                                Field = "Ukprn",
+                                Operator = DataOperator.Equals,
+                                Value = "something",
+                            },
+                            new SearchRequestFilter
+                            {
+                                Field = "Urn",
+                                Operator = DataOperator.Equals,
+                                Value = "another",
+                            },
+                        },
+                        CombinationOperator = "and",
+                    },
+                },
+                Skip = 0,
+                Take = 10,
+                CombinationOperator = "and",
+                PointInTime = DateTime.Now,
+            };
+
+            var actual = _validator.Validate(request);
+
+            Assert.IsFalse(actual.IsValid);
+            Assert.AreEqual(2, actual.ValidationErrors.Length);
+            Assert.AreEqual("filter at index 0 of group at index 0 has invalid field value. Must be a number",
+                actual.ValidationErrors[0]);
+            Assert.AreEqual("filter at index 1 of group at index 0 has invalid field value. Must be a number",
+                actual.ValidationErrors[1]);
         }
     }
 }
