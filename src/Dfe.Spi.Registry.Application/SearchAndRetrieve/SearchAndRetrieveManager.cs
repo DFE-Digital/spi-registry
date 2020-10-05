@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -66,25 +67,25 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
                                 .ToArray(),
                             IndexedData = new Entity
                             {
-                                Name = registeredEntity.Entities[0].Name,
-                                Type = registeredEntity.Entities[0].Type,
-                                SubType = registeredEntity.Entities[0].SubType,
-                                Status = registeredEntity.Entities[0].Status,
-                                OpenDate = registeredEntity.Entities[0].OpenDate,
-                                CloseDate = registeredEntity.Entities[0].CloseDate,
-                                Urn = registeredEntity.Entities[0].Urn,
-                                Ukprn = registeredEntity.Entities[0].Ukprn,
-                                Uprn = registeredEntity.Entities[0].Uprn,
-                                CompaniesHouseNumber = registeredEntity.Entities[0].CompaniesHouseNumber,
-                                CharitiesCommissionNumber = registeredEntity.Entities[0].CharitiesCommissionNumber,
-                                AcademyTrustCode = registeredEntity.Entities[0].AcademyTrustCode,
-                                DfeNumber = registeredEntity.Entities[0].DfeNumber,
-                                LocalAuthorityCode = registeredEntity.Entities[0].LocalAuthorityCode,
-                                ManagementGroupType = registeredEntity.Entities[0].ManagementGroupType,
-                                ManagementGroupId = registeredEntity.Entities[0].ManagementGroupId,
-                                ManagementGroupCode = registeredEntity.Entities[0].ManagementGroupCode,
-                                ManagementGroupUkprn = registeredEntity.Entities[0].ManagementGroupUkprn,
-                                ManagementGroupCompaniesHouseNumber = registeredEntity.Entities[0].ManagementGroupCompaniesHouseNumber,
+                                Name = GetFirstNotNullValue(registeredEntity.Entities, x => x.Name),
+                                Type = GetFirstNotNullValue(registeredEntity.Entities, x => x.Type),
+                                SubType = GetFirstNotNullValue(registeredEntity.Entities, x => x.SubType),
+                                Status = GetFirstNotNullValue(registeredEntity.Entities, x => x.Status),
+                                OpenDate = GetFirstNotNullValue(registeredEntity.Entities, x => x.OpenDate),
+                                CloseDate = GetFirstNotNullValue(registeredEntity.Entities, x => x.CloseDate),
+                                Urn = GetFirstNotNullValue(registeredEntity.Entities, x => x.Urn),
+                                Ukprn = GetFirstNotNullValue(registeredEntity.Entities, x => x.Ukprn),
+                                Uprn = GetFirstNotNullValue(registeredEntity.Entities, x => x.Uprn),
+                                CompaniesHouseNumber = GetFirstNotNullValue(registeredEntity.Entities, x => x.CompaniesHouseNumber),
+                                CharitiesCommissionNumber = GetFirstNotNullValue(registeredEntity.Entities, x => x.CharitiesCommissionNumber),
+                                AcademyTrustCode = GetFirstNotNullValue(registeredEntity.Entities, x => x.AcademyTrustCode),
+                                DfeNumber = GetFirstNotNullValue(registeredEntity.Entities, x => x.DfeNumber),
+                                LocalAuthorityCode = GetFirstNotNullValue(registeredEntity.Entities, x => x.LocalAuthorityCode),
+                                ManagementGroupType = GetFirstNotNullValue(registeredEntity.Entities, x => x.ManagementGroupType),
+                                ManagementGroupId = GetFirstNotNullValue(registeredEntity.Entities, x => x.ManagementGroupId),
+                                ManagementGroupCode = GetFirstNotNullValue(registeredEntity.Entities, x => x.ManagementGroupCode),
+                                ManagementGroupUkprn = GetFirstNotNullValue(registeredEntity.Entities, x => x.ManagementGroupUkprn),
+                                ManagementGroupCompaniesHouseNumber = GetFirstNotNullValue(registeredEntity.Entities, x => x.ManagementGroupCompaniesHouseNumber),
                             },
                         })
                     .ToArray(),
@@ -104,6 +105,13 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
         {
             var registeredEntities = await _repository.RetrieveBatchAsync(entityPointers, pointInTime, cancellationToken);
             return registeredEntities;
+        }
+
+
+        private TValue GetFirstNotNullValue<TValue>(IEnumerable<LinkedEntity> entities, Func<LinkedEntity, TValue> expression)
+        {
+            var values = entities.Select(expression).ToArray();
+            return values.FirstOrDefault(x => x != null);
         }
     }
 }
