@@ -103,10 +103,8 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 
         public async Task<SearchResult> SearchAsync(SearchRequest request, string entityType, DateTime pointInTime, CancellationToken cancellationToken)
         {
-            // Build the query
-            var query = new CosmosQuery(request.CombinationOperator.Equals("or") ? CosmosCombinationOperator.Or : CosmosCombinationOperator.And)
-                .AddTypeCondition(entityType)
-                .AddPointInTimeCondition(pointInTime);
+            // Build the query for use input
+            var userQuery = new CosmosQuery(request.CombinationOperator.Equals("or") ? CosmosCombinationOperator.Or : CosmosCombinationOperator.And);
             foreach (var group in request.Groups)
             {
                 var groupQuery = new CosmosQuery(group.CombinationOperator.Equals("or") ? CosmosCombinationOperator.Or : CosmosCombinationOperator.And);
@@ -116,11 +114,15 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                     groupQuery.AddCondition(filter.Field, filter.Operator, filter.Value);
                 }
 
-                query.AddGroup(groupQuery);
+                userQuery.AddGroup(groupQuery);
             }
 
-            // Add the skip and take
-            query.TakeResultsBetween(request.Skip, request.Take);
+            // Add system properties
+            var query = new CosmosQuery(CosmosCombinationOperator.And)
+                .AddGroup(userQuery)
+                .AddTypeCondition(entityType)
+                .AddPointInTimeCondition(pointInTime)
+                .TakeResultsBetween(request.Skip, request.Take);
 
             // Get the results
             var results = await RunQuery(query, cancellationToken);
