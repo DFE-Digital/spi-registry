@@ -6,31 +6,33 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests.CosmosQueryTests
 {
     public class WhenBuildingQuery
     {
-        [TestCase("Name", "searchableName", "some-name", true)]
-        [TestCase("Type", "searchableType", "type", true)]
-        [TestCase("SubType", "searchableSubType", "sub-type", true)]
-        [TestCase("Status", "searchableStatus", "Open", true)]
-        [TestCase("OpenDate", "searchableOpenDate", "2020-07-21", true)]
-        [TestCase("CloseDate", "searchableCloseDate", "2020-08-21", true)]
-        [TestCase("Urn", "searchableUrn", "12345", false)]
-        [TestCase("Ukprn", "searchableUkprn", "12345678", false)]
-        [TestCase("Uprn", "searchableUprn", "6325", true)]
-        [TestCase("CompaniesHouseNumber", "searchableCompaniesHouseNumber", "012345678", true)]
-        [TestCase("CharitiesCommissionNumber", "searchableCharitiesCommissionNumber", "951357", true)]
-        [TestCase("AcademyTrustCode", "searchableAcademyTrustCode", "3698", true)]
-        [TestCase("DfeNumber", "searchableDfeNumber", "852-123", true)]
-        [TestCase("LocalAuthorityCode", "searchableLocalAuthorityCode", "852", true)]
-        [TestCase("ManagementGroupType", "searchableManagementGroupType", "type", true)]
-        [TestCase("ManagementGroupId", "searchableManagementGroupId", "987", true)]
-        [TestCase("ManagementGroupCode", "searchableManagementGroupCode", "type-123", true)]
-        [TestCase("ManagementGroupUkprn", "searchableManagementGroupUkprn", "87654321", false)]
-        [TestCase("ManagementGroupCompaniesHouseNumber", "searchableManagementGroupCompaniesHouseNumber", "087654321", true)]
-        public void ThenItShouldMapEntityPropertyNamesToSearchableNames(string field, string searchableField, string value, bool expectValueQuoted)
+        [TestCase("Name", "searchableName", "some-name", true, true)]
+        [TestCase("Type", "searchableType", "type", true, true)]
+        [TestCase("SubType", "searchableSubType", "sub-type", true, true)]
+        [TestCase("Status", "searchableStatus", "Open", true, true)]
+        [TestCase("OpenDate", "searchableOpenDate", "2020-07-21T00:00:00", true, false)]
+        [TestCase("CloseDate", "searchableCloseDate", "2020-08-21T00:00:00", true, false)]
+        [TestCase("Urn", "searchableUrn", "12345", false, true)]
+        [TestCase("Ukprn", "searchableUkprn", "12345678", false, true)]
+        [TestCase("Uprn", "searchableUprn", "6325", true, true)]
+        [TestCase("CompaniesHouseNumber", "searchableCompaniesHouseNumber", "012345678", true, true)]
+        [TestCase("CharitiesCommissionNumber", "searchableCharitiesCommissionNumber", "951357", true, true)]
+        [TestCase("AcademyTrustCode", "searchableAcademyTrustCode", "3698", true, true)]
+        [TestCase("DfeNumber", "searchableDfeNumber", "852-123", true, true)]
+        [TestCase("LocalAuthorityCode", "searchableLocalAuthorityCode", "852", true, true)]
+        [TestCase("ManagementGroupType", "searchableManagementGroupType", "type", true, true)]
+        [TestCase("ManagementGroupId", "searchableManagementGroupId", "987", true, true)]
+        [TestCase("ManagementGroupCode", "searchableManagementGroupCode", "type-123", true, true)]
+        [TestCase("ManagementGroupUkprn", "searchableManagementGroupUkprn", "87654321", false, true)]
+        [TestCase("ManagementGroupCompaniesHouseNumber", "searchableManagementGroupCompaniesHouseNumber", "087654321", true, true)]
+        public void ThenItShouldMapEntityPropertyNamesToSearchableNames(string field, string searchableField, string value, bool expectValueQuoted, bool expectValueLowercased)
         {
             var query = new CosmosQuery(CosmosCombinationOperator.And)
                 .AddCondition(field, DataOperator.Equals, value);
 
-            var expectedValue = expectValueQuoted ? $"'{value.ToLower()}'" : value;
+            var expectedValue = expectValueQuoted 
+                ? (expectValueLowercased ? $"'{value.ToLower()}'" : $"'{value}'") 
+                : value;
             Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE ARRAY_CONTAINS(re.{searchableField}, {expectedValue})", 
                 CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
         }

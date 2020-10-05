@@ -15,7 +15,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests.CosmosQueryTests
 
             query.AddCondition(field, DataOperator.Equals, value);
 
-            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE ARRAY_CONTAINS(re.{field}, '{value}')", CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
+            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE ARRAY_CONTAINS(re.{field}, '{value}T00:00:00')", CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
         }
 
         [TestCase("searchableOpenDate", "2020-08-21")]
@@ -25,7 +25,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests.CosmosQueryTests
 
             query.AddCondition(field, DataOperator.GreaterThan, value);
 
-            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE EXISTS (SELECT VALUE v FROM v IN re.{field} WHERE v > '{value}')", CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
+            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE EXISTS (SELECT VALUE v FROM v IN re.{field} WHERE v > '{value}T00:00:00')", CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
         }
 
         [TestCase("searchableOpenDate", "2020-08-21")]
@@ -35,7 +35,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests.CosmosQueryTests
 
             query.AddCondition(field, DataOperator.GreaterThanOrEqualTo, value);
 
-            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE EXISTS (SELECT VALUE v FROM v IN re.{field} WHERE v >= '{value}')", CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
+            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE EXISTS (SELECT VALUE v FROM v IN re.{field} WHERE v >= '{value}T00:00:00')", CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
         }
 
         [TestCase("searchableOpenDate", "2020-08-21")]
@@ -45,7 +45,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests.CosmosQueryTests
 
             query.AddCondition(field, DataOperator.LessThan, value);
 
-            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE EXISTS (SELECT VALUE v FROM v IN re.{field} WHERE v < '{value}')", CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
+            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE EXISTS (SELECT VALUE v FROM v IN re.{field} WHERE v < '{value}T00:00:00')", CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
         }
 
         [TestCase("searchableOpenDate", "2020-08-21")]
@@ -55,7 +55,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests.CosmosQueryTests
 
             query.AddCondition(field, DataOperator.LessThanOrEqualTo, value);
 
-            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE EXISTS (SELECT VALUE v FROM v IN re.{field} WHERE v <= '{value}')", CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
+            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE EXISTS (SELECT VALUE v FROM v IN re.{field} WHERE v <= '{value}T00:00:00')", CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
         }
 
         [TestCase("searchableOpenDate")]
@@ -85,7 +85,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb.UnitTests.CosmosQueryTests
 
             query.AddCondition(field, DataOperator.Between, $"{lowerBound} to {upperBound}");
 
-            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE EXISTS (SELECT VALUE v FROM v IN re.{field} WHERE v >= '{lowerBound}' AND v <= '{upperBound}')",
+            Assert.AreEqual($"{CosmosQueryTestConstants.QueryPrefix} WHERE EXISTS (SELECT VALUE v FROM v IN re.{field} WHERE v >= '{lowerBound}T00:00:00' AND v <= '{upperBound}T00:00:00')",
                 CosmosQueryTestConstants.QueryWithoutOrderByOrSkip(query));
         }
         

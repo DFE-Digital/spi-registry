@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using Dfe.Spi.Common.Extensions;
 using Dfe.Spi.Common.Models;
 
 namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
@@ -281,6 +282,12 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             if (dataType == typeof(long[]))
             {
                 return value;
+            }
+
+            if (dataType == typeof(DateTime[]))
+            {
+                var dateTime = value.ToDateTime();
+                return $"'{dateTime:yyyy-MM-ddTHH:mm:ss}'";
             }
 
             // Treat everything else as a string
