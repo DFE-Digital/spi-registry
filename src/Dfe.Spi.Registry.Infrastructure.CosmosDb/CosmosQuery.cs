@@ -291,7 +291,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             }
 
             // Treat everything else as a string
-            return $"'{value?.ToLower()}'";
+            return $"'{value?.ToLower().Replace("'", "\\'")}'";
         }
     }
 }
