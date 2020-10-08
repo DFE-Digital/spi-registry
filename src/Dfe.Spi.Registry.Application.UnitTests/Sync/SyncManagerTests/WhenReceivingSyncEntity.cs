@@ -1,7 +1,10 @@
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
+using Dfe.Spi.Common.Context.Definitions;
+using Dfe.Spi.Common.Context.Models;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.WellKnownIdentifiers;
 using Dfe.Spi.Models.Entities;
@@ -22,6 +25,8 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
         private Mock<IRepository> _repositoryMock;
         private Mock<IMatcher> _matcherMock;
         private Mock<ILoggerWrapper> _loggerMock;
+        private SpiExecutionContext _executionContext;
+        private Mock<ISpiExecutionContextManager> _executionContextManagerMock;
         private SyncManager _syncManager;
         private CancellationToken _cancellationToken;
 
@@ -40,11 +45,21 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
 
             _loggerMock = new Mock<ILoggerWrapper>();
 
+            _executionContext = new SpiExecutionContext
+            {
+                InternalRequestId = _fixture.Create<Guid>(),
+                ExternalRequestId = _fixture.Create<string>(),
+            };
+            _executionContextManagerMock = new Mock<ISpiExecutionContextManager>();
+            _executionContextManagerMock.Setup(cm => cm.SpiExecutionContext)
+                .Returns(_executionContext);
+
             _syncManager = new SyncManager(
                 _syncQueueMock.Object,
                 _repositoryMock.Object,
                 _matcherMock.Object,
-                _loggerMock.Object);
+                _loggerMock.Object,
+                _executionContextManagerMock.Object);
 
             _cancellationToken = new CancellationToken();
         }
@@ -61,6 +76,20 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                 It.Is<SyncQueueItem>(actual => 
                     IsCorrectlyMappedEntity(@event.Details, sourceSystemName, actual.Entity) &&
                     actual.PointInTime == @event.PointInTime),
+                _cancellationToken));
+        }
+
+        [Test]
+        public async Task ThenItShouldUseContextRequestIdsForQueueItem()
+        {
+            var @event = _fixture.Create<SyncEntityEvent<LearningProvider>>();
+            
+            await _syncManager.ReceiveSyncEntityAsync(@event, SourceSystemNames.GetInformationAboutSchools, _cancellationToken);
+            
+            _syncQueueMock.Verify(q => q.EnqueueEntityForSyncAsync(
+                It.Is<SyncQueueItem>(actual => 
+                    actual.InternalRequestId == _executionContext.InternalRequestId &&
+                    actual.ExternalRequestId == _executionContext.ExternalRequestId),
                 _cancellationToken));
         }
 

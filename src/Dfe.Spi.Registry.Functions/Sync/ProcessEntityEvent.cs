@@ -43,6 +43,11 @@ namespace Dfe.Spi.Registry.Functions.Sync
             var syncQueueItem = JsonConvert.DeserializeObject<SyncQueueItem>(queueItem.AsString);
             _logger.Debug($"Deserialized content to {JsonConvert.SerializeObject(syncQueueItem)}");
 
+            if (syncQueueItem.InternalRequestId.HasValue)
+            {
+                _executionContextManager.SetInternalRequestId(syncQueueItem.InternalRequestId.Value);
+            }
+
             await _syncManager.ProcessSyncQueueItemAsync(syncQueueItem, cancellationToken);
         }
     }

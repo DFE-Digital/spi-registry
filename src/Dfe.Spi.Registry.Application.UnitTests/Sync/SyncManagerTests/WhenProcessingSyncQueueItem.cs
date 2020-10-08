@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture.NUnit3;
+using Dfe.Spi.Common.Context.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.UnitTesting;
 using Dfe.Spi.Registry.Application.Matching;
@@ -21,6 +22,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
         private Mock<IRepository> _repositoryMock;
         private Mock<IMatcher> _matcherMock;
         private Mock<ILoggerWrapper> _loggerMock;
+        private Mock<ISpiExecutionContextManager> _executionContextManagerMock;
         private SyncManager _syncManager;
         private CancellationToken _cancellationToken;
 
@@ -40,12 +42,15 @@ namespace Dfe.Spi.Registry.Application.UnitTests.Sync.SyncManagerTests
                 });
 
             _loggerMock = new Mock<ILoggerWrapper>();
+            
+            _executionContextManagerMock = new Mock<ISpiExecutionContextManager>();
 
             _syncManager = new SyncManager(
                 _syncQueueMock.Object,
                 _repositoryMock.Object,
                 _matcherMock.Object,
-                _loggerMock.Object);
+                _loggerMock.Object,
+                _executionContextManagerMock.Object);
 
             _cancellationToken = new CancellationToken();
         }

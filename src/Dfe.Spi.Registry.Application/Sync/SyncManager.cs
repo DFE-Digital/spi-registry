@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dfe.Spi.Common.Context.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.WellKnownIdentifiers;
 using Dfe.Spi.Models.Entities;
@@ -27,27 +28,34 @@ namespace Dfe.Spi.Registry.Application.Sync
         private readonly IRepository _repository;
         private readonly IMatcher _matcher;
         private readonly ILoggerWrapper _logger;
+        private readonly ISpiExecutionContextManager _executionContextManager;
 
         public SyncManager(
             ISyncQueue syncQueue,
             IRepository repository,
             IMatcher matcher,
-            ILoggerWrapper logger)
+            ILoggerWrapper logger,
+            ISpiExecutionContextManager executionContextManager)
         {
             _syncQueue = syncQueue;
             _repository = repository;
             _matcher = matcher;
             _logger = logger;
+            _executionContextManager = executionContextManager;
         }
 
         public async Task ReceiveSyncEntityAsync<T>(SyncEntityEvent<T> @event, string sourceSystemName, CancellationToken cancellationToken)
             where T : EntityBase
         {
             var entity = MapEventToEntity(@event, sourceSystemName);
+            
+            
             var queueItem = new SyncQueueItem
             {
                 Entity = entity,
                 PointInTime = @event.PointInTime,
+                InternalRequestId = _executionContextManager.SpiExecutionContext.InternalRequestId,
+                ExternalRequestId = _executionContextManager.SpiExecutionContext.ExternalRequestId,
             };
 
             await _syncQueue.EnqueueEntityForSyncAsync(queueItem, cancellationToken);
