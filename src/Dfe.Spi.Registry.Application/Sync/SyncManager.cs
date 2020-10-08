@@ -72,6 +72,7 @@ namespace Dfe.Spi.Registry.Application.Sync
                 cancellationToken);
 
             var matchResult = await _matcher.MatchAsync(queueItem.Entity, queueItem.PointInTime, cancellationToken);
+            _logger.Info($"Matching found {matchResult.Synonyms?.Length} synonyms and {matchResult.Links?.Length} links");
 
             var registeredEntity = GetRegisteredEntityForPointInTime(queueItem.Entity, queueItem.PointInTime, matchResult);
 
@@ -238,10 +239,12 @@ namespace Dfe.Spi.Registry.Application.Sync
 
                 if (existingEntity.ValidFrom == updatedEntity.ValidFrom)
                 {
+                    _logger.Info($"Updated entity {updatedEntity.Id} has same valid from as existing entity {existingEntity.Id}. Deleting existing entity");
                     deletes.Add(existingEntity);
                 }
                 else
                 {
+                    _logger.Info($"Setting existing entity {existingEntity.Id} ValidTo to {updatedEntity.ValidFrom}");
                     existingEntity.ValidTo = updatedEntity.ValidFrom;
                     updates.Add(existingEntity);
                 }
@@ -301,7 +304,11 @@ namespace Dfe.Spi.Registry.Application.Sync
                     }
                 }
 
-                _logger.Debug($"Storing {updates.Count} updated and {deletes.Count} deletes in repository");
+                var updateIds = updates.Count > 0 ? updates.Select(x => x.Id).Aggregate((x, y) => $"{x}, {y}") : string.Empty;
+                var deleteIds = deletes.Count > 0 ? deletes.Select(x => x.Id).Aggregate((x, y) => $"{x}, {y}") : string.Empty;
+                _logger.Debug($"Storing {updates.Count} updates and {deletes.Count} deletes in repository." +
+                              $"\nUpdate document ids: {updateIds}" +
+                              $"\nDelete document ids: {deleteIds}");
                 await _repository.StoreAsync(updates.ToArray(), deletes.ToArray(), cancellationToken);
             }
         }
