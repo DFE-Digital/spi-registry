@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AutoFixture;
 using AutoFixture.NUnit3;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
@@ -40,12 +41,17 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.Sync.ProcessEntityEventTests
             _cancellationToken = new CancellationToken();
         }
 
-        [Test]
-        public async Task ThenItShouldSetExecutionContext()
+        [Test, AutoData]
+        public async Task ThenItShouldSetContextToRequestIdsFromQueueItem(Guid internalRequestId, string externalRequestId)
         {
-            await _function.RunAsync(GetQueueMessage(new SyncQueueItem()), _cancellationToken);
+            var queueMessage = GetQueueMessage(new SyncQueueItem
+            {
+                InternalRequestId = internalRequestId,
+                ExternalRequestId = externalRequestId,
+            });
+            await _function.RunAsync(queueMessage, _cancellationToken);
             
-            _executionContextManagerMock.Verify(c=>c.SetInternalRequestId(It.IsAny<Guid>()));
+            _executionContextManagerMock.Verify(c=>c.SetInternalRequestId(internalRequestId));
         }
 
         [Test, AutoData]

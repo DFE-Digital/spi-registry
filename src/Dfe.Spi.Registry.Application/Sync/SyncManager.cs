@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dfe.Spi.Common.Context.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Common.WellKnownIdentifiers;
 using Dfe.Spi.Models.Entities;
@@ -27,27 +28,34 @@ namespace Dfe.Spi.Registry.Application.Sync
         private readonly IRepository _repository;
         private readonly IMatcher _matcher;
         private readonly ILoggerWrapper _logger;
+        private readonly ISpiExecutionContextManager _executionContextManager;
 
         public SyncManager(
             ISyncQueue syncQueue,
             IRepository repository,
             IMatcher matcher,
-            ILoggerWrapper logger)
+            ILoggerWrapper logger,
+            ISpiExecutionContextManager executionContextManager)
         {
             _syncQueue = syncQueue;
             _repository = repository;
             _matcher = matcher;
             _logger = logger;
+            _executionContextManager = executionContextManager;
         }
 
         public async Task ReceiveSyncEntityAsync<T>(SyncEntityEvent<T> @event, string sourceSystemName, CancellationToken cancellationToken)
             where T : EntityBase
         {
             var entity = MapEventToEntity(@event, sourceSystemName);
+            
+            
             var queueItem = new SyncQueueItem
             {
                 Entity = entity,
                 PointInTime = @event.PointInTime,
+                InternalRequestId = _executionContextManager.SpiExecutionContext.InternalRequestId,
+                ExternalRequestId = _executionContextManager.SpiExecutionContext.ExternalRequestId,
             };
 
             await _syncQueue.EnqueueEntityForSyncAsync(queueItem, cancellationToken);
@@ -64,6 +72,7 @@ namespace Dfe.Spi.Registry.Application.Sync
                 cancellationToken);
 
             var matchResult = await _matcher.MatchAsync(queueItem.Entity, queueItem.PointInTime, cancellationToken);
+            _logger.Info($"Matching found {matchResult.Synonyms?.Length} synonyms and {matchResult.Links?.Length} links");
 
             var registeredEntity = GetRegisteredEntityForPointInTime(queueItem.Entity, queueItem.PointInTime, matchResult);
 
@@ -230,10 +239,12 @@ namespace Dfe.Spi.Registry.Application.Sync
 
                 if (existingEntity.ValidFrom == updatedEntity.ValidFrom)
                 {
+                    _logger.Info($"Updated entity {updatedEntity.Id} has same valid from as existing entity {existingEntity.Id}. Deleting existing entity");
                     deletes.Add(existingEntity);
                 }
                 else
                 {
+                    _logger.Info($"Setting existing entity {existingEntity.Id} ValidTo to {updatedEntity.ValidFrom}");
                     existingEntity.ValidTo = updatedEntity.ValidFrom;
                     updates.Add(existingEntity);
                 }
@@ -293,7 +304,11 @@ namespace Dfe.Spi.Registry.Application.Sync
                     }
                 }
 
-                _logger.Debug($"Storing {updates.Count} updated and {deletes.Count} deletes in repository");
+                var updateIds = updates.Count > 0 ? updates.Select(x => x.Id).Aggregate((x, y) => $"{x}, {y}") : string.Empty;
+                var deleteIds = deletes.Count > 0 ? deletes.Select(x => x.Id).Aggregate((x, y) => $"{x}, {y}") : string.Empty;
+                _logger.Debug($"Storing {updates.Count} updates and {deletes.Count} deletes in repository." +
+                              $"\nUpdate document ids: {updateIds}" +
+                              $"\nDelete document ids: {deleteIds}");
                 await _repository.StoreAsync(updates.ToArray(), deletes.ToArray(), cancellationToken);
             }
         }
