@@ -29,10 +29,10 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
         {
             var validationErrors = new List<string>();
 
-            if (request.Take < 1 || request.Take > 100)
-            {
-                validationErrors.Add($"request has invalid Take ({request.Take}). Must between 1 and 100 inclusive");
-            }
+            // if (request.Take < 1 || request.Take > 100)
+            // {
+            //     validationErrors.Add($"request has invalid Take ({request.Take}). Must between 1 and 100 inclusive");
+            // }
             
             if (request.Skip < 0)
             {

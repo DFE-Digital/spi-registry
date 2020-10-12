@@ -65,6 +65,7 @@ namespace Dfe.Spi.Registry.Application.UnitTests.SearchAndRetrieve.SearchRequest
             Assert.IsTrue(actual.IsValid);
         }
 
+        [Ignore("Testing what an increased page size should be, so temporarily removing limit")]
         [TestCase(-1)]
         [TestCase(0)]
         [TestCase(101)]
