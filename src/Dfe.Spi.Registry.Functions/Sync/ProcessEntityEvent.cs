@@ -35,7 +35,8 @@ namespace Dfe.Spi.Registry.Functions.Sync
             CloudQueueMessage queueItem,
             CancellationToken cancellationToken)
         {
-            _executionContextManager.SetInternalRequestId(Guid.NewGuid());
+            var tempInternalRequestId = Guid.NewGuid();
+            _executionContextManager.SetInternalRequestId(tempInternalRequestId);
             
             _logger.Info($"Started processing item {queueItem.Id} from {QueueNames.SyncQueue} for attempt {queueItem.DequeueCount} (Put in queue at {queueItem.InsertionTime})");
             _logger.Info($"Queue item content: {queueItem.AsString}");
@@ -46,6 +47,7 @@ namespace Dfe.Spi.Registry.Functions.Sync
             if (syncQueueItem.InternalRequestId.HasValue)
             {
                 _executionContextManager.SetInternalRequestId(syncQueueItem.InternalRequestId.Value);
+                _logger.Info($"Changed internal request id from {tempInternalRequestId} to {syncQueueItem.InternalRequestId.Value} to correlate processing with receipt");
             }
 
             await _syncManager.ProcessSyncQueueItemAsync(syncQueueItem, cancellationToken);

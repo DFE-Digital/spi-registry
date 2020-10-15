@@ -49,7 +49,6 @@ namespace Dfe.Spi.Registry.Application.Sync
         {
             var entity = MapEventToEntity(@event, sourceSystemName);
             
-            
             var queueItem = new SyncQueueItem
             {
                 Entity = entity,
@@ -58,7 +57,8 @@ namespace Dfe.Spi.Registry.Application.Sync
                 ExternalRequestId = _executionContextManager.SpiExecutionContext.ExternalRequestId,
             };
 
-            await _syncQueue.EnqueueEntityForSyncAsync(queueItem, cancellationToken);
+            var messageId = await _syncQueue.EnqueueEntityForSyncAsync(queueItem, cancellationToken);
+            _logger.Info($"Queued item with message id {messageId}");
         }
 
         public async Task ProcessSyncQueueItemAsync(SyncQueueItem queueItem, CancellationToken cancellationToken)
