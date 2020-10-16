@@ -83,8 +83,14 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 {
                     if (!batchResponse.IsSuccessStatusCode)
                     {
-                        throw new Exception(
-                            $"Failed to store batch of entities in {partitionKey} (Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
+                        if (batchResponse.StatusCode == HttpStatusCode.PreconditionFailed)
+                        {
+                            throw new Exception($"Failed to store batch of entities in {partitionKey} as one or more of the updated entities has been " +
+                                                $"modified since the last time it was read. This is likely due to a duplicate sync event being received.");
+                        }
+                        
+                        throw new Exception($"Failed to store batch of entities in {partitionKey} " +
+                                            $"(Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
                     }
                 }
             }, logger, cancellationToken);
