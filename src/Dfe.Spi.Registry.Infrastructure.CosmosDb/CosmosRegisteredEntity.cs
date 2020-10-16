@@ -27,5 +27,11 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
         public string[] SearchableManagementGroupCode { get; set; }
         public long[] SearchableManagementGroupUkprn { get; set; }
         public string[] SearchableManagementGroupCompaniesHouseNumber { get; set; }
+
+        public string _ETag
+        {
+            get { return ETag; }
+            set { ETag = value; }
+        }
     }
 }

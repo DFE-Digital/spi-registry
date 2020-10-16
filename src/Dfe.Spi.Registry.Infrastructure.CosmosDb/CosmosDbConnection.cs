@@ -61,7 +61,15 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 var batch = Container.CreateTransactionalBatch(new PartitionKey(partitionKey));
                 foreach (var entity in entitiesToUpsert)
                 {
-                    batch.UpsertItem(entity);
+                    TransactionalBatchItemRequestOptions options = null;
+                    if (entity is CosmosRegisteredEntity registeredEntity && !string.IsNullOrEmpty(registeredEntity.ETag))
+                    {
+                        options = new TransactionalBatchItemRequestOptions
+                        {
+                            IfMatchEtag = registeredEntity.ETag,
+                        };
+                    }
+                    batch.UpsertItem(entity, options);
                 }
 
                 foreach (var id in idsToDelete)
