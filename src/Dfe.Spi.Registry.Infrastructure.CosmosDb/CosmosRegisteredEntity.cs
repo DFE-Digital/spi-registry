@@ -1,5 +1,6 @@
 using System;
 using Dfe.Spi.Registry.Domain;
+using Newtonsoft.Json;
 
 namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 {
@@ -28,10 +29,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
         public long[] SearchableManagementGroupUkprn { get; set; }
         public string[] SearchableManagementGroupCompaniesHouseNumber { get; set; }
 
-        public string _ETag
-        {
-            get { return ETag; }
-            set { ETag = value; }
-        }
+        [JsonProperty("_etag")]
+        public override string ETag { get; set; }
     }
 }

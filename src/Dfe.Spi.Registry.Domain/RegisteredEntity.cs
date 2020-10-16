@@ -11,6 +11,6 @@ namespace Dfe.Spi.Registry.Domain
         public LinkedEntity[] Entities { get; set; }
         public Link[] Links { get; set; }
         
-        public string ETag { get; set; }
+        public virtual string ETag { get; set; }
     }
 }

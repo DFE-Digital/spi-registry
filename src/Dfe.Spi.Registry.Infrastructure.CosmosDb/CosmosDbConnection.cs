@@ -49,9 +49,9 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             }, logger, cancellationToken);
         }
 
-        public async Task MakeTransactionalUpdateAsync<T>(
+        public async Task MakeTransactionalUpdateAsync(
             string partitionKey,
-            T[] entitiesToUpsert,
+            CosmosRegisteredEntity[] entitiesToUpsert,
             string[] idsToDelete,
             ILoggerWrapper logger,
             CancellationToken cancellationToken)
@@ -62,13 +62,15 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 foreach (var entity in entitiesToUpsert)
                 {
                     TransactionalBatchItemRequestOptions options = null;
-                    if (entity is CosmosRegisteredEntity registeredEntity && !string.IsNullOrEmpty(registeredEntity.ETag))
+                    if (!string.IsNullOrEmpty(entity.ETag))
                     {
                         options = new TransactionalBatchItemRequestOptions
                         {
-                            IfMatchEtag = registeredEntity.ETag,
+                            IfMatchEtag = entity.ETag,
                         };
                     }
+
+                    entity.ETag = null;
                     batch.UpsertItem(entity, options);
                 }
 
