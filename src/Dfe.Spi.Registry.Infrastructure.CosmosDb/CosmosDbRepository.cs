@@ -77,6 +77,37 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 .AddPointInTimeCondition(pointInTime);
             
             var results = await RunQuery(query, cancellationToken);
+            
+            // It is possible that the above query will return multiple results if the pointInTime is a day that a change occured
+            //    Example: pointInTime=2020-10-04, E1=2020-01-01 to 2020-10-04, E2=2020-10-04 to null
+            // So we need to check for this
+            if (results.Length == 2)
+            {
+                var orderedResults = results.OrderBy(x => x.ValidFrom).ToArray();
+                var earliestRecord = orderedResults.First();
+                var latestRecord = orderedResults.Last();
+
+                // Check to see if this was a date of change
+                if (earliestRecord.ValidTo == latestRecord.ValidFrom)
+                {
+                    // If so, just use the latest record
+                    return latestRecord;
+                }
+                
+                // This is not a data of change
+                throw new Exception($"Query for {entityType}:{sourceSystemName}:{sourceSystemId} at {pointInTime} returned 2 results. " +
+                                    $"Those 2 records do not represent a change date " +
+                                    $"(earliest record valid {earliestRecord.ValidFrom} to {earliestRecord.ValidTo}, " +
+                                    $"latest record valid {latestRecord.ValidFrom} to {latestRecord.ValidTo})." +
+                                    "Something appears to be wrong with the stored data");
+            }
+            
+            if (results.Length > 2)
+            {
+                throw new Exception($"Query for {entityType}:{sourceSystemName}:{sourceSystemId} at {pointInTime} returned {results.Length} results. " +
+                                    "There should normally only be a single result, occasionally 2 on the date of a change. " +
+                                    "Something appears to be wrong with the stored data");
+            }
 
             return results.SingleOrDefault();
         }

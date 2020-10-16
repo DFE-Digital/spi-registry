@@ -10,5 +10,7 @@ namespace Dfe.Spi.Registry.Domain
         public DateTime? ValidTo { get; set; }
         public LinkedEntity[] Entities { get; set; }
         public Link[] Links { get; set; }
+        
+        public virtual string ETag { get; set; }
     }
 }

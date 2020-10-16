@@ -40,12 +40,12 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.Sync.ReceiveEntityEventTests
             _cancellationToken = new CancellationToken();
         }
 
-        [Test]
-        public async Task ThenItShouldSetExecutionContext()
+        [Test, NonRecursiveAutoData]
+        public async Task ThenItShouldSetExecutionContext(SyncEntityEvent<LearningProvider> @event)
         {
             var request = (HttpRequest) HttpRequestBuilder
                 .CreateHttpRequest()
-                .WithJsonBody(new SyncEntityEvent<LearningProvider>());
+                .WithJsonBody(@event);
 
             await _function.RunAsync(request, EntityNameTranslator.LearningProviderPlural, "anything", _cancellationToken);
 
@@ -85,12 +85,12 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.Sync.ReceiveEntityEventTests
                 Times.Once);
         }
 
-        [Test]
-        public async Task ThenItShouldReturnAcceptedResult()
+        [Test, NonRecursiveAutoData]
+        public async Task ThenItShouldReturnAcceptedResult(SyncEntityEvent<LearningProvider> @event)
         {
             var request = HttpRequestBuilder
                 .CreateHttpRequest()
-                .WithJsonBody(new SyncEntityEvent<LearningProvider>());
+                .WithJsonBody(@event);
 
             var actual = await _function.RunAsync(request, EntityNameTranslator.LearningProviderPlural, "anything", _cancellationToken);
 

@@ -54,6 +54,8 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 SearchableManagementGroupCode = registeredEntity.GetSearchableValues(e => e.ManagementGroupCode),
                 SearchableManagementGroupUkprn = registeredEntity.GetSearchableValues(e => e.ManagementGroupUkprn),
                 SearchableManagementGroupCompaniesHouseNumber = registeredEntity.GetSearchableValues(e => e.ManagementGroupCompaniesHouseNumber),
+                
+                ETag = registeredEntity.ETag,
             };
         }
 
@@ -67,6 +69,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 ValidTo = registeredEntity.ValidTo,
                 Entities = registeredEntity.Entities,
                 Links = registeredEntity.Links,
+                ETag = registeredEntity.ETag,
             };
         }
     }

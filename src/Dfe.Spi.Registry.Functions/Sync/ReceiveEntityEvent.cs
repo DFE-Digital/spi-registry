@@ -1,7 +1,9 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Http.Server.Definitions;
 using Dfe.Spi.Common.Logging.Definitions;
+using Dfe.Spi.Common.WellKnownIdentifiers;
 using Dfe.Spi.Models.Entities;
 using Dfe.Spi.Registry.Application.Sync;
 using Dfe.Spi.Registry.Domain;
@@ -45,16 +47,10 @@ namespace Dfe.Spi.Registry.Functions.Sync
             switch (singularEntityType)
             {
                 case EntityNameTranslator.LearningProviderSingular:
-                    await _syncManager.ReceiveSyncEntityAsync(
-                        JsonConvert.DeserializeObject<SyncEntityEvent<LearningProvider>>(eventJson),
-                        sourceSystemName,
-                        cancellationToken);
+                    await ReceiveLearningProvider(eventJson, sourceSystemName, cancellationToken);
                     break;
                 case EntityNameTranslator.ManagementGroupSingular:
-                    await _syncManager.ReceiveSyncEntityAsync(
-                        JsonConvert.DeserializeObject<SyncEntityEvent<ManagementGroup>>(eventJson),
-                        sourceSystemName, 
-                        cancellationToken);
+                    await ReceiveManagementGroup(eventJson, sourceSystemName, cancellationToken);
                     break;
                 default:
                     _logger.Info($"Received entityType {entityType}, which could not be converted to a valid singular value. Returning 400");
@@ -62,6 +58,35 @@ namespace Dfe.Spi.Registry.Functions.Sync
             }
             
             return new AcceptedResult();
+        }
+
+
+        private async Task ReceiveLearningProvider(string eventJson, string sourceSystemName, CancellationToken cancellationToken)
+        {
+            var syncEvent = JsonConvert.DeserializeObject<SyncEntityEvent<LearningProvider>>(eventJson);
+            var learningProviderId =
+                sourceSystemName.Equals(SourceSystemNames.UkRegisterOfLearningProviders, StringComparison.InvariantCultureIgnoreCase)
+                    ? syncEvent.Details.Ukprn
+                    : syncEvent.Details.Urn;
+                    
+            _logger.Info($"Handing sync event for learning-provider {sourceSystemName}:{learningProviderId} for point in time {syncEvent.PointInTime}");
+                    
+            await _syncManager.ReceiveSyncEntityAsync(
+                syncEvent,
+                sourceSystemName,
+                cancellationToken);
+        }
+
+        private async Task ReceiveManagementGroup(string eventJson, string sourceSystemName, CancellationToken cancellationToken)
+        {
+            var syncEvent = JsonConvert.DeserializeObject<SyncEntityEvent<ManagementGroup>>(eventJson);
+            
+            _logger.Info($"Handing sync event for management-group {sourceSystemName}:{syncEvent.Details.Code} for point in time {syncEvent.PointInTime}");
+            
+            await _syncManager.ReceiveSyncEntityAsync(
+                syncEvent,
+                sourceSystemName, 
+                cancellationToken);
         }
     }
 }
