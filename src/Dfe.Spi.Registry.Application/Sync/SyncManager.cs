@@ -49,7 +49,6 @@ namespace Dfe.Spi.Registry.Application.Sync
         {
             var entity = MapEventToEntity(@event, sourceSystemName);
             
-            
             var queueItem = new SyncQueueItem
             {
                 Entity = entity,
@@ -58,7 +57,8 @@ namespace Dfe.Spi.Registry.Application.Sync
                 ExternalRequestId = _executionContextManager.SpiExecutionContext.ExternalRequestId,
             };
 
-            await _syncQueue.EnqueueEntityForSyncAsync(queueItem, cancellationToken);
+            var messageId = await _syncQueue.EnqueueEntityForSyncAsync(queueItem, cancellationToken);
+            _logger.Info($"Queued item with message id {messageId}");
         }
 
         public async Task ProcessSyncQueueItemAsync(SyncQueueItem queueItem, CancellationToken cancellationToken)
@@ -233,7 +233,7 @@ namespace Dfe.Spi.Registry.Application.Sync
             else if (!AreSame(existingEntity, updatedEntity))
             {
                 _logger.Info(
-                    $"Entity {updatedEntity.Id} ({updatedEntity.Entities[0]}) on {updatedEntity.ValidFrom} has changed since {existingEntity.ValidFrom}. Adding entry to be updated");
+                    $"Entity {updatedEntity.Id} ({updatedEntity.Entities[0]}) on {updatedEntity.ValidFrom} has changed since {existingEntity.ValidFrom} ({existingEntity.Id}). Adding entry to be updated");
 
                 updates.Add(updatedEntity);
 
@@ -248,6 +248,11 @@ namespace Dfe.Spi.Registry.Application.Sync
                     existingEntity.ValidTo = updatedEntity.ValidFrom;
                     updates.Add(existingEntity);
                 }
+            }
+            else
+            {
+                _logger.Info($"Entity {updatedEntity.Id} ({updatedEntity.Entities[0]}) on {updatedEntity.ValidFrom} has not changed since " +
+                             $"{existingEntity.ValidFrom} ({existingEntity.Id}). No update being made");
             }
 
             if (updates.Count > 0)

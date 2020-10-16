@@ -5,6 +5,6 @@ namespace Dfe.Spi.Registry.Domain.Sync
 {
     public interface ISyncQueue
     {
-        Task EnqueueEntityForSyncAsync(SyncQueueItem queueItem, CancellationToken cancellationToken);
+        Task<string> EnqueueEntityForSyncAsync(SyncQueueItem queueItem, CancellationToken cancellationToken);
     }
 }

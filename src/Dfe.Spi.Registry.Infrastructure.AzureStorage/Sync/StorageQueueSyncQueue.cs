@@ -20,12 +20,14 @@ namespace Dfe.Spi.Registry.Infrastructure.AzureStorage.Sync
             _queue = queueClient.GetQueueReference(QueueNames.SyncQueue);
         }
         
-        public async Task EnqueueEntityForSyncAsync(SyncQueueItem queueItem, CancellationToken cancellationToken)
+        public async Task<string> EnqueueEntityForSyncAsync(SyncQueueItem queueItem, CancellationToken cancellationToken)
         {
             await _queue.CreateIfNotExistsAsync(cancellationToken);
                 
             var message = new CloudQueueMessage(JsonConvert.SerializeObject(queueItem));
             await _queue.AddMessageAsync(message, cancellationToken);
+
+            return message.Id;
         }
     }
 }

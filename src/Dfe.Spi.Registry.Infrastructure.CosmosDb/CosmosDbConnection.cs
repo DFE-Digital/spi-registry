@@ -49,9 +49,9 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             }, logger, cancellationToken);
         }
 
-        public async Task MakeTransactionalUpdateAsync<T>(
+        public async Task MakeTransactionalUpdateAsync(
             string partitionKey,
-            T[] entitiesToUpsert,
+            CosmosRegisteredEntity[] entitiesToUpsert,
             string[] idsToDelete,
             ILoggerWrapper logger,
             CancellationToken cancellationToken)
@@ -61,7 +61,17 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 var batch = Container.CreateTransactionalBatch(new PartitionKey(partitionKey));
                 foreach (var entity in entitiesToUpsert)
                 {
-                    batch.UpsertItem(entity);
+                    TransactionalBatchItemRequestOptions options = null;
+                    if (!string.IsNullOrEmpty(entity.ETag))
+                    {
+                        options = new TransactionalBatchItemRequestOptions
+                        {
+                            IfMatchEtag = entity.ETag,
+                        };
+                    }
+
+                    entity.ETag = null;
+                    batch.UpsertItem(entity, options);
                 }
 
                 foreach (var id in idsToDelete)
@@ -73,8 +83,14 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 {
                     if (!batchResponse.IsSuccessStatusCode)
                     {
-                        throw new Exception(
-                            $"Failed to store batch of entities in {partitionKey} (Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
+                        if (batchResponse.StatusCode == HttpStatusCode.PreconditionFailed)
+                        {
+                            throw new Exception($"Failed to store batch of entities in {partitionKey} as one or more of the updated entities has been " +
+                                                $"modified since the last time it was read. This is likely due to a duplicate sync event being received.");
+                        }
+                        
+                        throw new Exception($"Failed to store batch of entities in {partitionKey} " +
+                                            $"(Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
                     }
                 }
             }, logger, cancellationToken);

@@ -22,10 +22,10 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
             _queue = new ConcurrentQueue<SyncQueueItem>();
         }
 
-        public Task EnqueueEntityForSyncAsync(SyncQueueItem queueItem, CancellationToken cancellationToken)
+        public Task<string> EnqueueEntityForSyncAsync(SyncQueueItem queueItem, CancellationToken cancellationToken)
         {
             _queue.Enqueue(queueItem);
-            return Task.CompletedTask;
+            return Task.FromResult(Guid.NewGuid().ToString());
         }
 
         public async Task DrainQueueAsync(CancellationToken cancellationToken)
