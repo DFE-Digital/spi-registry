@@ -15,6 +15,9 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
     public class CosmosDbConnection
     {
         private const int MaxActionAttempts = 3;
+        private readonly SemaphoreSlim _retrySemaphore = new SemaphoreSlim(0, 1);
+        private DateTime _retryAfter = DateTime.MinValue;
+        
 
         internal CosmosDbConnection(Container container)
         {
@@ -120,11 +123,10 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
         private async Task<T> ExecuteContainerActionAsync<T>(Func<Task<T>> asyncAction, ILoggerWrapper logger, CancellationToken cancellationToken)
         {
             var attempt = 1;
-            var retryAfter = DateTime.MinValue;
             var random = new Random();
             while (true)
             {
-                var waitFor = retryAfter - DateTime.Now;
+                var waitFor = _retryAfter - DateTime.Now;
                 if (waitFor.TotalMilliseconds > 0)
                 {
                     logger.Debug($"Joining queue; waiting for {waitFor.TotalMilliseconds:0}ms");
@@ -146,8 +148,16 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                         throw;
                     }
 
-                    retryAfter = DateTime.Now.Add(ex.RetryAfter ?? TimeSpan.FromMilliseconds(500)).AddMilliseconds(random.Next(100, 500));
-                    logger.Debug($"Retrying after {retryAfter:HH:mm:ss.ffff} due to receiving {statusCode} on attempt {attempt} of {MaxActionAttempts}");
+                    await _retrySemaphore.WaitAsync(cancellationToken);
+                    try
+                    {
+                        _retryAfter = DateTime.Now.Add(ex.RetryAfter ?? TimeSpan.FromMilliseconds(500)).AddMilliseconds(random.Next(100, 500));
+                        logger.Debug($"Retrying after {_retryAfter:HH:mm:ss.ffff} due to receiving {statusCode} on attempt {attempt} of {MaxActionAttempts}");
+                    }
+                    finally
+                    {
+                        _retrySemaphore.Release();
+                    }
                 }
 
                 attempt++;
