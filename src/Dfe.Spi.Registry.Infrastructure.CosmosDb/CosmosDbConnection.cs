@@ -119,14 +119,15 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 
         private async Task<T> ExecuteContainerActionAsync<T>(Func<Task<T>> asyncAction, ILoggerWrapper logger, CancellationToken cancellationToken)
         {
-            var attempt = 0;
+            var attempt = 1;
             var retryAfter = DateTime.MinValue;
+            var random = new Random();
             while (true)
             {
                 var waitFor = retryAfter - DateTime.Now;
                 if (waitFor.TotalMilliseconds > 0)
                 {
-                    logger.Debug($"Joining queue; waiting for {waitFor.TotalSeconds:0}s");
+                    logger.Debug($"Joining queue; waiting for {waitFor.TotalMilliseconds:0}ms");
                     await Task.Delay(waitFor, cancellationToken);
                 }
 
@@ -139,14 +140,14 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                     var statusCode = (int) ex.StatusCode;
                     
                     logger.Debug($"Received {statusCode} on attempt {attempt} of {MaxActionAttempts}");
-                    if (attempt >= MaxActionAttempts - 1 || statusCode != 429)
+                    if (attempt >= MaxActionAttempts || statusCode != 429)
                     {
                         logger.Debug($"Not retrying after receiving {statusCode} on attempt {attempt} of {MaxActionAttempts}");
                         throw;
                     }
 
-                    retryAfter = DateTime.Now.Add(ex.RetryAfter ?? TimeSpan.FromSeconds(1));
-                    logger.Debug($"Retrying after {retryAfter} due to receiving {statusCode} on attempt {attempt} of {MaxActionAttempts}");
+                    retryAfter = DateTime.Now.Add(ex.RetryAfter ?? TimeSpan.FromMilliseconds(500)).AddMilliseconds(random.Next(100, 500));
+                    logger.Debug($"Retrying after {retryAfter:HH:mm:ss.ffff} due to receiving {statusCode} on attempt {attempt} of {MaxActionAttempts}");
                 }
 
                 attempt++;
