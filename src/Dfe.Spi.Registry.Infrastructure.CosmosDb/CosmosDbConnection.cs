@@ -16,11 +16,8 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
     {
         private const int MaxActionAttempts = 3;
 
-        private DateTime _retryAfter;
-
         internal CosmosDbConnection(Container container)
         {
-            _retryAfter = DateTime.MinValue;
             Container = container;
         }
 
@@ -88,7 +85,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                             throw new Exception($"Failed to store batch of entities in {partitionKey} as one or more of the updated entities has been " +
                                                 $"modified since the last time it was read. This is likely due to a duplicate sync event being received.");
                         }
-                        
+
                         throw new Exception($"Failed to store batch of entities in {partitionKey} " +
                                             $"(Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
                     }
@@ -119,12 +116,14 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 return null;
             }, logger, cancellationToken);
         }
+
         private async Task<T> ExecuteContainerActionAsync<T>(Func<Task<T>> asyncAction, ILoggerWrapper logger, CancellationToken cancellationToken)
         {
             var attempt = 0;
+            var retryAfter = DateTime.MinValue;
             while (true)
             {
-                var waitFor = _retryAfter - DateTime.Now;
+                var waitFor = retryAfter - DateTime.Now;
                 if (waitFor.TotalMilliseconds > 0)
                 {
                     logger.Debug($"Joining queue; waiting for {waitFor.TotalSeconds:0}s");
@@ -142,11 +141,8 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                         throw;
                     }
 
-                    lock (this)
-                    {
-                        _retryAfter = DateTime.Now.Add(ex.RetryAfter ?? TimeSpan.FromSeconds(1));
-                        logger.Debug($"Received 429 on attempt {attempt}. Will retry after {_retryAfter}");
-                    }
+                    retryAfter = DateTime.Now.Add(ex.RetryAfter ?? TimeSpan.FromSeconds(1));
+                    logger.Debug($"Received 429 on attempt {attempt}. Will retry after {retryAfter}");
                 }
 
                 attempt++;
