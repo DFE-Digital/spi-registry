@@ -136,13 +136,17 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 }
                 catch (CosmosException ex)
                 {
-                    if (attempt >= MaxActionAttempts - 1 || (int) ex.StatusCode != 429)
+                    var statusCode = (int) ex.StatusCode;
+                    
+                    logger.Debug($"Received {statusCode} on attempt {attempt} of {MaxActionAttempts}");
+                    if (attempt >= MaxActionAttempts - 1 || statusCode != 429)
                     {
+                        logger.Debug($"Not retrying after receiving {statusCode} on attempt {attempt} of {MaxActionAttempts}");
                         throw;
                     }
 
                     retryAfter = DateTime.Now.Add(ex.RetryAfter ?? TimeSpan.FromSeconds(1));
-                    logger.Debug($"Received 429 on attempt {attempt}. Will retry after {retryAfter}");
+                    logger.Debug($"Retrying after {retryAfter} due to receiving {statusCode} on attempt {attempt} of {MaxActionAttempts}");
                 }
 
                 attempt++;
