@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dfe.Spi.Common.Logging.Definitions;
+using Dfe.Spi.Common.Models;
 using Dfe.Spi.Registry.Domain;
 using Dfe.Spi.Registry.Domain.Data;
 
@@ -80,8 +81,8 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
                     {
                         var dataType = searchableFields[fieldName];
 
-                        if ((TypeIsLong(dataType) && !ValueIsLong(filter.Value)) ||
-                            (TypeIsInt(dataType) && !ValueIsInt(filter.Value)))
+                        if (filter.Operator != DataOperator.In &&
+                            (TypeIsLong(dataType) && !ValueIsLong(filter.Value)) || (TypeIsInt(dataType) && !ValueIsInt(filter.Value)))
                         {
                             validationErrors.Add($"filter at index {filterIndex} of group at index {groupIndex} has invalid field value. " +
                                                  $"Must be a number");
@@ -113,6 +114,7 @@ namespace Dfe.Spi.Registry.Application.SearchAndRetrieve
 
             return message;
         }
+
 
         private bool TypeIsLong(Type dataType)
         {
