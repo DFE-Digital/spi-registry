@@ -54,15 +54,24 @@ namespace Dfe.Spi.Registry.Functions.SearchAndRetrieve
 
             var results = request.Entities.Select(requestedPointer =>
             {
-                var registeredEntity = entities.SingleOrDefault(re =>
-                    re.Entities.Any(e =>
-                        e.EntityType.Equals(requestedPointer.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
-                        e.SourceSystemName.Equals(requestedPointer.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
-                        e.SourceSystemId.Equals(requestedPointer.SourceSystemId, StringComparison.InvariantCultureIgnoreCase)));
+                var registeredEntities = entities.Where(re =>
+                        re.Entities.Any(e =>
+                            e.EntityType.Equals(requestedPointer.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
+                            e.SourceSystemName.Equals(requestedPointer.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                            e.SourceSystemId.Equals(requestedPointer.SourceSystemId, StringComparison.InvariantCultureIgnoreCase)))
+                    .ToArray();
+                if (registeredEntities.Length > 1)
+                {
+                    var resultIds = registeredEntities.Select(x => x.Id).Aggregate((x, y) => $"{x}, {y}");
+                    var exceptionMessage = $"Expected zero or one result for entity {requestedPointer} when getting links, however found {registeredEntities.Length}. " +
+                                           $"The results ids are: {resultIds}";
+                    _logger.Error(exceptionMessage);
+                    throw new Exception(exceptionMessage);
+                }
                 return new EntityLinksResult
                 {
                     Entity = requestedPointer,
-                    Links = registeredEntity?.Links,
+                    Links = registeredEntities.SingleOrDefault()?.Links,
                 };
             }).ToArray();
 
