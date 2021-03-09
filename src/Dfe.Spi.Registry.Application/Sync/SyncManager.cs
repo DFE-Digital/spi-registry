@@ -48,7 +48,7 @@ namespace Dfe.Spi.Registry.Application.Sync
             where T : EntityBase
         {
             var entity = MapEventToEntity(@event, sourceSystemName);
-            
+
             var queueItem = new SyncQueueItem
             {
                 Entity = entity,
@@ -179,7 +179,9 @@ namespace Dfe.Spi.Registry.Application.Sync
             {
                 foreach (var synonymousEntity in synonym.RegisteredEntity.Entities)
                 {
-                    if (!entities.Any(x => x.SourceSystemName == synonymousEntity.SourceSystemName && x.SourceSystemId == synonymousEntity.SourceSystemId))
+                    if (!entities.Any(x =>
+                        x.SourceSystemName.Equals(synonymousEntity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                        x.SourceSystemId.Equals(synonymousEntity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase)))
                     {
                         var cloned = MapEntityToLinkedEntity(synonymousEntity);
                         cloned.LinkedAt = synonymousEntity.LinkedAt ?? DateTime.UtcNow;
@@ -224,6 +226,7 @@ namespace Dfe.Spi.Registry.Application.Sync
             var updates = new List<RegisteredEntity>();
             var deletes = new List<RegisteredEntity>();
 
+            // Check if entity has changed
             if (existingEntity == null)
             {
                 _logger.Info(
@@ -253,69 +256,95 @@ namespace Dfe.Spi.Registry.Application.Sync
             {
                 _logger.Info($"Entity {updatedEntity.Id} ({updatedEntity.Entities[0]}) on {updatedEntity.ValidFrom} has not changed since " +
                              $"{existingEntity.ValidFrom} ({existingEntity.Id}). No update being made");
+                return;
             }
-
-            if (updates.Count > 0)
+            
+            // Check if any synonyms of original entity are now unlinked
+            foreach (var existingSynonym in existingEntity.Entities)
             {
-                foreach (var synonym in matchResult.Synonyms)
+                var isLinked = updates.Any(update =>
+                    !update.ValidTo.HasValue &&
+                    update.Entities.Any(updateSynonym =>
+                        existingSynonym.SourceSystemId.Equals(updateSynonym.SourceSystemId, StringComparison.InvariantCultureIgnoreCase) &&
+                        existingSynonym.SourceSystemName.Equals(updateSynonym.SourceSystemName, StringComparison.InvariantCultureIgnoreCase)));
+                if (isLinked)
                 {
-                    if (synonym.RegisteredEntity.ValidFrom == updatedEntity.ValidFrom)
-                    {
-                        _logger.Info($"Adding {synonym.RegisteredEntity.Id} to be deleted");
-                        deletes.Add(synonym.RegisteredEntity);
-                    }
-                    else
-                    {
-                        _logger.Info($"Setting ValidTo of {synonym.RegisteredEntity.Id} to {updatedEntity.ValidFrom}");
-                        synonym.RegisteredEntity.ValidTo = updatedEntity.ValidFrom;
-                        updates.Add(synonym.RegisteredEntity);
-                    }
+                    _logger.Debug($"Existing synonym {existingSynonym} has been re-linked. No further action required");
+                    continue;
                 }
+                
+                _logger.Info($"Existing synonym {existingSynonym} is no longer linked. Re-matching for update");
+                
+                var unlinkedSynonymMatchResult = await _matcher.MatchAsync(existingSynonym, updatedEntity.ValidFrom, cancellationToken);
+                _logger.Info($"Matching found {matchResult.Synonyms?.Length} synonyms and {matchResult.Links?.Length} links " +
+                             $"for unlinked synonym {existingSynonym}");
 
-                var linksToUpdate = matchResult.Links
-                    .Where(link => !link.LinkFromSynonym &&
-                                   !AreAlreadyLinked(updatedEntity.Entities[0], link.LinkType, link.RegisteredEntity))
-                    .ToArray();
-                foreach (var link in linksToUpdate)
-                {
-                    var linkFromUpdate = updatedEntity.Links.Single(updateLink =>
-                        updateLink.EntityType == link.Entity.EntityType &&
-                        updateLink.SourceSystemName == link.Entity.SourceSystemName &&
-                        updateLink.SourceSystemId == link.Entity.SourceSystemId);
-                    var newLink = new Link
-                    {
-                        EntityType = updatedEntity.Entities[0].EntityType,
-                        SourceSystemName = updatedEntity.Entities[0].SourceSystemName,
-                        SourceSystemId = updatedEntity.Entities[0].SourceSystemId,
-                        LinkedAt = linkFromUpdate.LinkedAt,
-                        LinkedBy = linkFromUpdate.LinkedBy,
-                        LinkedReason = linkFromUpdate.LinkedReason,
-                        LinkType = linkFromUpdate.LinkType,
-                    };
-
-                    var updatedLinkedEntity = CloneWithNewLink(link.RegisteredEntity, newLink, updatedEntity.ValidFrom);
-                    updates.Add(updatedLinkedEntity);
-
-                    if (link.RegisteredEntity.ValidFrom == updatedEntity.ValidFrom)
-                    {
-                        _logger.Info($"Adding {link.RegisteredEntity.Id} to be deleted");
-                        deletes.Add(link.RegisteredEntity);
-                    }
-                    else
-                    {
-                        _logger.Info($"Setting ValidTo of {link.RegisteredEntity.Id} to {updatedEntity.ValidFrom}");
-                        link.RegisteredEntity.ValidTo = updatedEntity.ValidFrom;
-                        updates.Add(link.RegisteredEntity);
-                    }
-                }
-
-                var updateIds = updates.Count > 0 ? updates.Select(x => x.Id).Aggregate((x, y) => $"{x}, {y}") : string.Empty;
-                var deleteIds = deletes.Count > 0 ? deletes.Select(x => x.Id).Aggregate((x, y) => $"{x}, {y}") : string.Empty;
-                _logger.Debug($"Storing {updates.Count} updates and {deletes.Count} deletes in repository." +
-                              $"\nUpdate document ids: {updateIds}" +
-                              $"\nDelete document ids: {deleteIds}");
-                await _repository.StoreAsync(updates.ToArray(), deletes.ToArray(), cancellationToken);
+                var relinkedEntity = GetRegisteredEntityForPointInTime(existingSynonym, updatedEntity.ValidFrom, unlinkedSynonymMatchResult);
+                _logger.Info($"Entity {existingSynonym} is being updated as {relinkedEntity.Id}");
+                updates.Add(relinkedEntity);
             }
+
+            // Make sure all synonyms are correctly updated with valid to
+            foreach (var synonym in matchResult.Synonyms)
+            {
+                if (synonym.RegisteredEntity.ValidFrom == updatedEntity.ValidFrom)
+                {
+                    _logger.Info($"Adding {synonym.RegisteredEntity.Id} to be deleted");
+                    deletes.Add(synonym.RegisteredEntity);
+                }
+                else if (!updates.Any(x => x.Id == synonym.RegisteredEntity.Id))
+                {
+                    _logger.Info($"Setting ValidTo of {synonym.RegisteredEntity.Id} to {updatedEntity.ValidFrom}");
+                    synonym.RegisteredEntity.ValidTo = updatedEntity.ValidFrom;
+                    updates.Add(synonym.RegisteredEntity);
+                }
+            }
+
+            // Make sure all links are updated with link to this entity
+            var linksToUpdate = matchResult.Links
+                .Where(link => !link.LinkFromSynonym &&
+                               !AreAlreadyLinked(updatedEntity.Entities[0], link.LinkType, link.RegisteredEntity))
+                .ToArray();
+            foreach (var link in linksToUpdate)
+            {
+                var linkFromUpdate = updatedEntity.Links.Single(updateLink =>
+                    updateLink.EntityType == link.Entity.EntityType &&
+                    updateLink.SourceSystemName == link.Entity.SourceSystemName &&
+                    updateLink.SourceSystemId == link.Entity.SourceSystemId);
+                var newLink = new Link
+                {
+                    EntityType = updatedEntity.Entities[0].EntityType,
+                    SourceSystemName = updatedEntity.Entities[0].SourceSystemName,
+                    SourceSystemId = updatedEntity.Entities[0].SourceSystemId,
+                    LinkedAt = linkFromUpdate.LinkedAt,
+                    LinkedBy = linkFromUpdate.LinkedBy,
+                    LinkedReason = linkFromUpdate.LinkedReason,
+                    LinkType = linkFromUpdate.LinkType,
+                };
+
+                var updatedLinkedEntity = CloneWithNewLink(link.RegisteredEntity, newLink, updatedEntity.ValidFrom);
+                updates.Add(updatedLinkedEntity);
+
+                if (link.RegisteredEntity.ValidFrom == updatedEntity.ValidFrom)
+                {
+                    _logger.Info($"Adding {link.RegisteredEntity.Id} to be deleted");
+                    deletes.Add(link.RegisteredEntity);
+                }
+                else
+                {
+                    _logger.Info($"Setting ValidTo of {link.RegisteredEntity.Id} to {updatedEntity.ValidFrom}");
+                    link.RegisteredEntity.ValidTo = updatedEntity.ValidFrom;
+                    updates.Add(link.RegisteredEntity);
+                }
+            }
+
+            // Write changes to store
+            var updateIds = updates.Count > 0 ? updates.Select(x => x.Id).Aggregate((x, y) => $"{x}, {y}") : string.Empty;
+            var deleteIds = deletes.Count > 0 ? deletes.Select(x => x.Id).Aggregate((x, y) => $"{x}, {y}") : string.Empty;
+            _logger.Debug($"Storing {updates.Count} updates and {deletes.Count} deletes in repository." +
+                          $"\nUpdate document ids: {updateIds}" +
+                          $"\nDelete document ids: {deleteIds}");
+            await _repository.StoreAsync(updates.ToArray(), deletes.ToArray(), cancellationToken);
         }
 
         private RegisteredEntity CloneWithNewLink(RegisteredEntity registeredEntity, Link newLink, DateTime validFrom)

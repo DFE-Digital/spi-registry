@@ -181,13 +181,20 @@ namespace Dfe.Spi.Registry.Application.Matching
             };
             var searchResult = await _repository.SearchAsync(searchRequest, profile.CandidateType, pointInTime, cancellationToken);
             var candidates = searchResult.Results;
-
-            return candidates
-                .Where(candidate =>
-                    !candidate.Entities.Any(entity =>
+            
+            bool CandidateHasMoreEntitiesThanSource(RegisteredEntity candidate)
+            {
+                var numberOfEntitiesThatAreSourceEntity =
+                    candidate.Entities.Count(entity =>
                         entity.EntityType.Equals(sourceEntity.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
                         entity.SourceSystemName.Equals(sourceEntity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
-                        entity.SourceSystemId.Equals(sourceEntity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase)))
+                        entity.SourceSystemId.Equals(sourceEntity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase));
+
+                return candidate.Entities.Length - numberOfEntitiesThatAreSourceEntity > 0;
+            }
+
+            return candidates
+                .Where(CandidateHasMoreEntitiesThanSource)
                 .Select(candidate =>
                     new MatchResultItem
                     {
