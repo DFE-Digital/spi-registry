@@ -260,28 +260,31 @@ namespace Dfe.Spi.Registry.Application.Sync
             }
             
             // Check if any synonyms of original entity are now unlinked
-            foreach (var existingSynonym in existingEntity.Entities)
+            if (existingEntity != null)
             {
-                var isLinked = updates.Any(update =>
-                    !update.ValidTo.HasValue &&
-                    update.Entities.Any(updateSynonym =>
-                        existingSynonym.SourceSystemId.Equals(updateSynonym.SourceSystemId, StringComparison.InvariantCultureIgnoreCase) &&
-                        existingSynonym.SourceSystemName.Equals(updateSynonym.SourceSystemName, StringComparison.InvariantCultureIgnoreCase)));
-                if (isLinked)
+                foreach (var existingSynonym in existingEntity.Entities)
                 {
-                    _logger.Debug($"Existing synonym {existingSynonym} has been re-linked. No further action required");
-                    continue;
-                }
-                
-                _logger.Info($"Existing synonym {existingSynonym} is no longer linked. Re-matching for update");
-                
-                var unlinkedSynonymMatchResult = await _matcher.MatchAsync(existingSynonym, updatedEntity.ValidFrom, cancellationToken);
-                _logger.Info($"Matching found {matchResult.Synonyms?.Length} synonyms and {matchResult.Links?.Length} links " +
-                             $"for unlinked synonym {existingSynonym}");
+                    var isLinked = updates.Any(update =>
+                        !update.ValidTo.HasValue &&
+                        update.Entities.Any(updateSynonym =>
+                            existingSynonym.SourceSystemId.Equals(updateSynonym.SourceSystemId, StringComparison.InvariantCultureIgnoreCase) &&
+                            existingSynonym.SourceSystemName.Equals(updateSynonym.SourceSystemName, StringComparison.InvariantCultureIgnoreCase)));
+                    if (isLinked)
+                    {
+                        _logger.Debug($"Existing synonym {existingSynonym} has been re-linked. No further action required");
+                        continue;
+                    }
 
-                var relinkedEntity = GetRegisteredEntityForPointInTime(existingSynonym, updatedEntity.ValidFrom, unlinkedSynonymMatchResult);
-                _logger.Info($"Entity {existingSynonym} is being updated as {relinkedEntity.Id}");
-                updates.Add(relinkedEntity);
+                    _logger.Info($"Existing synonym {existingSynonym} is no longer linked. Re-matching for update");
+
+                    var unlinkedSynonymMatchResult = await _matcher.MatchAsync(existingSynonym, updatedEntity.ValidFrom, cancellationToken);
+                    _logger.Info($"Matching found {matchResult.Synonyms?.Length} synonyms and {matchResult.Links?.Length} links " +
+                                 $"for unlinked synonym {existingSynonym}");
+
+                    var relinkedEntity = GetRegisteredEntityForPointInTime(existingSynonym, updatedEntity.ValidFrom, unlinkedSynonymMatchResult);
+                    _logger.Info($"Entity {existingSynonym} is being updated as {relinkedEntity.Id}");
+                    updates.Add(relinkedEntity);
+                }
             }
 
             // Make sure all synonyms are correctly updated with valid to
