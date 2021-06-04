@@ -5,7 +5,7 @@
     </PropertyGroup>
     
     <ItemGroup>
-        <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.0" />
+      <!--  <PackageReference Include="Dfe.Spi.Common.Logging" Version="1.1.0" /> -->
         <PackageReference Include="Dfe.Spi.Common.WellKnownIdentifiers" Version="1.2.1" />
         <PackageReference Include="Dfe.Spi.Models" Version="2.1.0" />
     </ItemGroup>
