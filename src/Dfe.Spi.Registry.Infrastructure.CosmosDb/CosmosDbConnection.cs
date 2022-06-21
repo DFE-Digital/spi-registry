@@ -71,16 +71,27 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                     }
 
                     entity.ETag = null;
+                    logger.Debug($"Upserting item ID: {entity.Id}, Partitionable ID: {entity.PartitionableId}");
                     batch.UpsertItem(entity, options);
+                    logger.Debug($"Upsert added to batch");
                 }
 
                 foreach (var id in idsToDelete)
                 {
+                    logger.Debug($"Deleting item ID: {id}");
                     batch.DeleteItem(id);
+                    logger.Debug($"Delete added to batch");
                 }
 
                 using (var batchResponse = await batch.ExecuteAsync(cancellationToken))
                 {
+                    for(int i = 0; i < batchResponse.Count; i++)
+                    {
+                        TransactionalBatchOperationResult<CosmosRegisteredEntity> result = batchResponse.GetOperationResultAtIndex<CosmosRegisteredEntity>(i);
+                        CosmosRegisteredEntity resultEntity = result.Resource;
+                        logger.Debug($"ID: {resultEntity.Id}, Partitionable ID: {resultEntity.PartitionableId}, Status Code: {result.StatusCode}, ETag: {resultEntity.ETag}");
+                    }
+
                     if (!batchResponse.IsSuccessStatusCode)
                     {
                         if (batchResponse.StatusCode == HttpStatusCode.PreconditionFailed)
