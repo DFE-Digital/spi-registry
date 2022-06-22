@@ -88,8 +88,8 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                     for(int i = 0; i < batchResponse.Count; i++)
                     {
                         TransactionalBatchOperationResult<CosmosRegisteredEntity> result = batchResponse.GetOperationResultAtIndex<CosmosRegisteredEntity>(i);
-                        CosmosRegisteredEntity resultEntity = result.Resource;
-                        logger.Debug($"ID: {resultEntity.Id}, Partitionable ID: {resultEntity.PartitionableId}, Status Code: {result.StatusCode}, ETag: {resultEntity.ETag}");
+                        CosmosRegisteredEntity resultEntity = result?.Resource;
+                        logger.Debug($"ID: {resultEntity?.Id}, Partitionable ID: {resultEntity?.PartitionableId}, Status Code: {result?.StatusCode}, ETag: {resultEntity?.ETag}");
                     }
 
                     if (!batchResponse.IsSuccessStatusCode)
