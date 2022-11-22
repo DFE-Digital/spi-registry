@@ -7,16 +7,24 @@ trigger:
 workspace:
   clean: all
 
+pool:
+  vmImage: 'ubuntu-latest'
+
 variables:
   buildConfiguration: 'release'
   buildPlatform: 'any cpu'
 
 steps:
   - task: NuGetToolInstaller@1
-    displayName: 'Use NuGet 5.1.0'
+    displayName: 'Use NuGet 6.4.0'
     inputs:
-      versionSpec: '5.1.0'
-      
+      versionSpec: '6.4.0'
+
+  - task: UseDotNet@2
+    displayName: 'Use dotnet 6'
+    inputs:
+     version: '6.0.x'
+
   - task: NuGetCommand@2
     displayName: 'Restore NuGet Packages'
     inputs:
