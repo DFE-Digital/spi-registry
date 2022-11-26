@@ -32,16 +32,15 @@ namespace Dfe.Spi.Registry.Functions.Sync
         [FunctionName("ProcessEntityEvent")]
         public async Task RunAsync(
             [QueueTrigger(QueueNames.SyncQueue)]
-            CloudQueueMessage queueItem,
+            string queueItem,
             CancellationToken cancellationToken)
         {
             var tempInternalRequestId = Guid.NewGuid();
             _executionContextManager.SetInternalRequestId(tempInternalRequestId);
             
-            _logger.Info($"Started processing item {queueItem.Id} from {QueueNames.SyncQueue} for attempt {queueItem.DequeueCount} (Put in queue at {queueItem.InsertionTime})");
-            _logger.Info($"Queue item content: {queueItem.AsString}");
+            _logger.Info($"Queue item content: {queueItem}");
         
-            var syncQueueItem = JsonConvert.DeserializeObject<SyncQueueItem>(queueItem.AsString);
+            var syncQueueItem = JsonConvert.DeserializeObject<SyncQueueItem>(queueItem);
             _logger.Debug($"Deserialized content to {JsonConvert.SerializeObject(syncQueueItem)}");
         
             if (syncQueueItem.InternalRequestId.HasValue)
@@ -49,7 +48,6 @@ namespace Dfe.Spi.Registry.Functions.Sync
                 _executionContextManager.SetInternalRequestId(syncQueueItem.InternalRequestId.Value);
                 _logger.Info($"Changed internal request id from {tempInternalRequestId} to {syncQueueItem.InternalRequestId.Value} to correlate processing with receipt");
             }
-        
             await _syncManager.ProcessSyncQueueItemAsync(syncQueueItem, cancellationToken);
         }
     }
