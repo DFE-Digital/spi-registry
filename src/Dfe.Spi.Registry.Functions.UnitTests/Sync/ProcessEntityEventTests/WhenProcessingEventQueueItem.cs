@@ -1,4 +1,5 @@
 using System;
+using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
@@ -44,12 +45,13 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.Sync.ProcessEntityEventTests
         [Test, AutoData]
         public async Task ThenItShouldSetContextToRequestIdsFromQueueItem(Guid internalRequestId, string externalRequestId)
         {
-            var queueMessage = GetQueueMessage(new SyncQueueItem
+            var queueMessage = new SyncQueueItem
             {
                 InternalRequestId = internalRequestId,
                 ExternalRequestId = externalRequestId,
-            });
-            await _function.RunAsync(queueMessage, _cancellationToken);
+            };
+            var stringQueueMessage = JsonConvert.SerializeObject(queueMessage);
+            await _function.RunAsync(stringQueueMessage, _cancellationToken);
             
             _executionContextManagerMock.Verify(c=>c.SetInternalRequestId(internalRequestId));
         }
@@ -57,7 +59,9 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.Sync.ProcessEntityEventTests
         [Test, AutoData]
         public async Task ThenItShouldDeserializeAndProcessTheQueueItem(SyncQueueItem syncQueueItem)
         {
-            await _function.RunAsync(GetQueueMessage(syncQueueItem), _cancellationToken);
+            var stringQueueMessage = JsonConvert.SerializeObject(syncQueueItem);
+
+            await _function.RunAsync(stringQueueMessage, _cancellationToken);
 
             _syncManagerMock.Verify(m => m.ProcessSyncQueueItemAsync(
                     It.Is<SyncQueueItem>(actualQueueItem => ObjectAssert.AreEqual(syncQueueItem, actualQueueItem)),
@@ -65,10 +69,5 @@ namespace Dfe.Spi.Registry.Functions.UnitTests.Sync.ProcessEntityEventTests
                 Times.Once);
         }
 
-
-        private CloudQueueMessage GetQueueMessage(SyncQueueItem content)
-        {
-            return new CloudQueueMessage(JsonConvert.SerializeObject(content));
-        }
     }
 }
