@@ -42,8 +42,7 @@ namespace Dfe.Spi.Registry.IntegrationTests.Stubs
                 try
                 {
                     var queueItemJson = JsonConvert.SerializeObject(queueItem);
-                    var message = new CloudQueueMessage(queueItemJson);
-                    await function.RunAsync(message, cancellationToken);
+                    await function.RunAsync(queueItemJson, cancellationToken);
                 }
                 catch (Exception ex)
                 {
