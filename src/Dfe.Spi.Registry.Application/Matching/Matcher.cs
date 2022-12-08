@@ -47,10 +47,10 @@ namespace Dfe.Spi.Registry.Application.Matching
                 var synonymLinks = await GetLinks(synonymousEntity, pointInTime, profiles, cancellationToken);
                 foreach (var synonymLink in synonymLinks)
                 {
-                    if (!links.Any(l => l.LinkType == synonymLink.LinkType &&
-                                        l.Entity.EntityType == synonymLink.Entity.EntityType &&
-                                        l.Entity.SourceSystemName == synonymLink.Entity.SourceSystemName &&
-                                        l.Entity.SourceSystemId == synonymLink.Entity.SourceSystemId))
+                    if (!links.Any(l => l.LinkType.Equals(synonymLink.LinkType, StringComparison.InvariantCultureIgnoreCase) &&
+                                        l.Entity.EntityType.Equals(synonymLink.Entity.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
+                                                                   l.Entity.SourceSystemName.Equals(synonymLink.Entity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                                                                   l.Entity.SourceSystemId.Equals(synonymLink.Entity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase)))
                     {
                         synonymLink.LinkFromSynonym = true;
                         synonymLink.LinkFromSynonym = true;

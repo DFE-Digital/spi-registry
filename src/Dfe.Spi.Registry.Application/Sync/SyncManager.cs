@@ -166,7 +166,7 @@ namespace Dfe.Spi.Registry.Application.Sync
             _logger.Debug($"Preparing updated version of {entity} at {pointInTime}");
 
             // Get entities
-            var entities = new List<LinkedEntity>(new[] {MapEntityToLinkedEntity(entity)});
+            var entities = new List<LinkedEntity>(new[] { MapEntityToLinkedEntity(entity) });
             if (matchResult.Synonyms.Length > 0)
             {
                 entities[0].LinkedAt = DateTime.UtcNow;
@@ -258,7 +258,7 @@ namespace Dfe.Spi.Registry.Application.Sync
                              $"{existingEntity.ValidFrom} ({existingEntity.Id}). No update being made");
                 return;
             }
-            
+
             // Check if any synonyms of original entity are now unlinked
             if (existingEntity != null)
             {
@@ -311,9 +311,9 @@ namespace Dfe.Spi.Registry.Application.Sync
             foreach (var link in linksToUpdate)
             {
                 var linkFromUpdate = updatedEntity.Links.Single(updateLink =>
-                    updateLink.EntityType == link.Entity.EntityType &&
-                    updateLink.SourceSystemName == link.Entity.SourceSystemName &&
-                    updateLink.SourceSystemId == link.Entity.SourceSystemId);
+                    updateLink.EntityType.Equals(link.Entity.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
+                    updateLink.SourceSystemName.Equals(link.Entity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                    updateLink.SourceSystemId.Equals(link.Entity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase));
                 var newLink = new Link
                 {
                     EntityType = updatedEntity.Entities[0].EntityType,
@@ -368,10 +368,10 @@ namespace Dfe.Spi.Registry.Application.Sync
 
         private bool AreAlreadyLinked(Entity sourceEntity, string linkType, RegisteredEntity entityBeingLinkedTo)
         {
-            return entityBeingLinkedTo.Links.Any(link => link.LinkType == linkType &&
-                                                         link.EntityType == sourceEntity.EntityType &&
-                                                         link.SourceSystemName == sourceEntity.SourceSystemName &&
-                                                         link.SourceSystemId == sourceEntity.SourceSystemId);
+            return entityBeingLinkedTo.Links.Any(link => link.LinkType.Equals(linkType, StringComparison.InvariantCultureIgnoreCase) &&
+                                                         link.EntityType.Equals(sourceEntity.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
+                                                         link.SourceSystemName.Equals(sourceEntity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                                                         link.SourceSystemId.Equals(sourceEntity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase));
         }
 
         private bool AreSame(RegisteredEntity registeredEntity1, RegisteredEntity registeredEntity2)
@@ -386,8 +386,8 @@ namespace Dfe.Spi.Registry.Application.Sync
             foreach (var entity1 in registeredEntity1.Entities)
             {
                 var entity2 = registeredEntity2.Entities.SingleOrDefault(e2 =>
-                    e2.SourceSystemName == entity1.SourceSystemName &&
-                    e2.SourceSystemId == entity1.SourceSystemId);
+                    e2.SourceSystemName.Equals(entity1.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                                               e2.SourceSystemId.Equals(entity1.SourceSystemId, StringComparison.InvariantCultureIgnoreCase));
 
                 if (entity2 == null)
                 {
@@ -412,10 +412,10 @@ namespace Dfe.Spi.Registry.Application.Sync
             foreach (var link1 in registeredEntity1.Links)
             {
                 var link2 = registeredEntity2.Links.SingleOrDefault(l2 =>
-                    l2.EntityType == link1.EntityType &&
-                    l2.SourceSystemName == link1.SourceSystemName &&
-                    l2.SourceSystemId == link1.SourceSystemId &&
-                    l2.LinkType == link1.LinkType);
+                    l2.EntityType.Equals(link1.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
+                    l2.SourceSystemName.Equals(link1.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                    l2.SourceSystemId.Equals(link1.SourceSystemId, StringComparison.InvariantCultureIgnoreCase) &&
+                    l2.LinkType.Equals(link1.LinkType, StringComparison.InvariantCultureIgnoreCase));
 
                 if (link2 == null)
                 {
@@ -430,15 +430,15 @@ namespace Dfe.Spi.Registry.Application.Sync
 
         private bool AreSame(Entity entity1, Entity entity2)
         {
-            return entity1.Name == entity2.Name &&
-                   entity1.Type == entity2.Type &&
-                   entity1.SubType == entity2.SubType &&
-                   entity1.Status == entity2.Status &&
+            return entity1.Name.Equals(entity2.Name, StringComparison.InvariantCultureIgnoreCase) &&
+                   entity1.Type.Equals(entity2.Type, StringComparison.InvariantCultureIgnoreCase) &&
+                   entity1.SubType.Equals(entity2.SubType, StringComparison.InvariantCultureIgnoreCase) &&
+                   entity1.Status.Equals(entity2.Status, StringComparison.InvariantCultureIgnoreCase) &&
                    entity1.OpenDate == entity2.OpenDate &&
                    entity1.CloseDate == entity2.CloseDate &&
                    entity1.Urn == entity2.Urn &&
                    entity1.Ukprn == entity2.Ukprn &&
-                   entity1.Uprn == entity2.Uprn &&
+                   entity1.Uprn.Equals(entity2.Uprn, StringComparison.InvariantCultureIgnoreCase) &&
                    entity1.CompaniesHouseNumber == entity2.CompaniesHouseNumber &&
                    entity1.CharitiesCommissionNumber == entity2.CharitiesCommissionNumber &&
                    entity1.AcademyTrustCode == entity2.AcademyTrustCode &&
