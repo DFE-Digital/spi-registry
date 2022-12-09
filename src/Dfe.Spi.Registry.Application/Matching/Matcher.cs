@@ -47,10 +47,10 @@ namespace Dfe.Spi.Registry.Application.Matching
                 var synonymLinks = await GetLinks(synonymousEntity, pointInTime, profiles, cancellationToken);
                 foreach (var synonymLink in synonymLinks)
                 {
-                    if (!links.Any(l => l.LinkType.Equals(synonymLink.LinkType, StringComparison.InvariantCultureIgnoreCase) &&
-                                        l.Entity.EntityType.Equals(synonymLink.Entity.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
-                                                                   l.Entity.SourceSystemName.Equals(synonymLink.Entity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
-                                                                   l.Entity.SourceSystemId.Equals(synonymLink.Entity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase)))
+                    if (!links.Any(l => string.Equals(l.LinkType,synonymLink.LinkType, StringComparison.InvariantCultureIgnoreCase) &&
+                                        string.Equals(l.Entity.EntityType,synonymLink.Entity.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
+                                        string.Equals(l.Entity.SourceSystemName,synonymLink.Entity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                                        string.Equals(l.Entity.SourceSystemId,synonymLink.Entity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase)))
                     {
                         synonymLink.LinkFromSynonym = true;
                         synonymLink.LinkFromSynonym = true;
@@ -186,9 +186,9 @@ namespace Dfe.Spi.Registry.Application.Matching
             {
                 var numberOfEntitiesThatAreSourceEntity =
                     candidate.Entities.Count(entity =>
-                        entity.EntityType.Equals(sourceEntity.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
-                        entity.SourceSystemName.Equals(sourceEntity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
-                        entity.SourceSystemId.Equals(sourceEntity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase));
+                        string.Equals(entity.EntityType,sourceEntity.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
+                        string.Equals(entity.SourceSystemName,sourceEntity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                                      string.Equals(entity.SourceSystemId,sourceEntity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase));
 
                 return candidate.Entities.Length - numberOfEntitiesThatAreSourceEntity > 0;
             }
@@ -292,9 +292,9 @@ namespace Dfe.Spi.Registry.Application.Matching
                 }
 
                 return x != null && y != null &&
-                       x.EntityType.Equals(y.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
-                       x.SourceSystemName.Equals(y.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
-                       x.SourceSystemId.Equals(y.SourceSystemId, StringComparison.InvariantCultureIgnoreCase);
+                       string.Equals(x.EntityType,y.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
+                                     string.Equals(x.SourceSystemName,y.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
+                                                   string.Equals(x.SourceSystemId,y.SourceSystemId, StringComparison.InvariantCultureIgnoreCase);
             }
 
             public int GetHashCode(LinkedEntity obj)
