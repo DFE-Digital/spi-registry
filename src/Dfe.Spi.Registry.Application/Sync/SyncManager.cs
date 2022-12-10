@@ -403,13 +403,13 @@ namespace Dfe.Spi.Registry.Application.Sync
             }
 
             // Compare links
-            if (registeredEntity1.Links.Length != registeredEntity2.Links.Length)
+            if ((registeredEntity1.Links?.Length ?? 0) != (registeredEntity2.Links?.Length ?? 0))
             {
                 _logger.Debug($"Entity {registeredEntity1.Id} and {registeredEntity2.Id} have a different number of links");
                 return false;
             }
 
-            foreach (var link1 in registeredEntity1.Links)
+            foreach (var link1 in registeredEntity1.Links ?? new Link[] { })
             {
                 var link2 = registeredEntity2.Links.SingleOrDefault(l2 =>
                     string.Equals(l2.EntityType,link1.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
