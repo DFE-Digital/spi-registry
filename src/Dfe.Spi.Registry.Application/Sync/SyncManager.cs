@@ -90,7 +90,7 @@ namespace Dfe.Spi.Registry.Application.Sync
                 return new Entity
                 {
                     EntityType = EntityNameTranslator.LearningProviderSingular,
-                    SourceSystemName = sourceSystemName,
+                    SourceSystemName = sourceSystemName.ToUpper(),
                     SourceSystemId = sourceSystemId,
                     Name = learningProvider.Name,
                     Type = learningProvider.Type,
