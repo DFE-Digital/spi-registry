@@ -59,6 +59,16 @@ namespace Dfe.Spi.Registry.Application.Matching
                 }
             }
 
+            // making sure SourceSystemName is always in uppercase
+            links.ForEach(x => x.Entity.SourceSystemName = x.Entity.SourceSystemName.ToUpper());
+            links.ForEach(x =>
+            {
+                foreach (var t in x.RegisteredEntity.Links)
+                {
+                    t.SourceSystemName = t.SourceSystemName.ToUpper();
+                }
+            });
+
             return new MatchResult
             {
                 Synonyms = synonyms.ToArray(),
