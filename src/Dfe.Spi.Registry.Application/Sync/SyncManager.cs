@@ -319,16 +319,16 @@ namespace Dfe.Spi.Registry.Application.Sync
                     string.Equals(updateLink.EntityType,link.Entity.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
                     string.Equals(updateLink.SourceSystemName,link.Entity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
                     string.Equals(updateLink.SourceSystemId,link.Entity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase));
-                var newLink = new Link
+                var newLink = linkFromUpdate != null ? new Link
                 {
                     EntityType = updatedEntity.Entities[0].EntityType,
                     SourceSystemName = updatedEntity.Entities[0].SourceSystemName,
                     SourceSystemId = updatedEntity.Entities[0].SourceSystemId,
-                    LinkedAt = linkFromUpdate?.LinkedAt ?? DateTime.Now,
-                    LinkedBy = linkFromUpdate?.LinkedBy,
-                    LinkedReason = linkFromUpdate?.LinkedReason,
-                    LinkType = linkFromUpdate?.LinkType,
-                };
+                    LinkedAt = linkFromUpdate.LinkedAt,
+                    LinkedBy = linkFromUpdate.LinkedBy,
+                    LinkedReason = linkFromUpdate.LinkedReason,
+                    LinkType = linkFromUpdate.LinkType,
+                } : null;
 
                 var updatedLinkedEntity = CloneWithNewLink(link.RegisteredEntity, newLink, updatedEntity.ValidFrom);
                 updates.Add(updatedLinkedEntity);
@@ -363,11 +363,11 @@ namespace Dfe.Spi.Registry.Application.Sync
                 Type = registeredEntity.Type,
                 ValidFrom = validFrom,
                 Entities = registeredEntity.Entities,
-                Links = registeredEntity.Links.Concat(
+                Links = newLink != null ? registeredEntity.Links.Concat(
                     new[]
                     {
                         newLink
-                    }).ToArray(),
+                    }).ToArray() : registeredEntity.Links,
             };
         }
 
