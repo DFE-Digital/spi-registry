@@ -308,9 +308,14 @@ namespace Dfe.Spi.Registry.Application.Sync
                 .Where(link => !link.LinkFromSynonym &&
                                !AreAlreadyLinked(updatedEntity.Entities[0], link.LinkType, link.RegisteredEntity))
                 .ToArray();
+
+            _logger.Info($"Links to update {linksToUpdate.Length}");
+
             foreach (var link in linksToUpdate)
             {
-                var linkFromUpdate = updatedEntity.Links.Single(updateLink =>
+                _logger.Info($"Link to update {link.Entity.SourceSystemId}, {link.Entity.SourceSystemName}, {link.Entity.EntityType}");
+
+                var linkFromUpdate = updatedEntity.Links.FirstOrDefault(updateLink =>
                     string.Equals(updateLink.EntityType,link.Entity.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
                     string.Equals(updateLink.SourceSystemName,link.Entity.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
                     string.Equals(updateLink.SourceSystemId,link.Entity.SourceSystemId, StringComparison.InvariantCultureIgnoreCase));
@@ -319,10 +324,10 @@ namespace Dfe.Spi.Registry.Application.Sync
                     EntityType = updatedEntity.Entities[0].EntityType,
                     SourceSystemName = updatedEntity.Entities[0].SourceSystemName,
                     SourceSystemId = updatedEntity.Entities[0].SourceSystemId,
-                    LinkedAt = linkFromUpdate.LinkedAt,
-                    LinkedBy = linkFromUpdate.LinkedBy,
-                    LinkedReason = linkFromUpdate.LinkedReason,
-                    LinkType = linkFromUpdate.LinkType,
+                    LinkedAt = linkFromUpdate?.LinkedAt ?? DateTime.Now,
+                    LinkedBy = linkFromUpdate?.LinkedBy,
+                    LinkedReason = linkFromUpdate?.LinkedReason,
+                    LinkType = linkFromUpdate?.LinkType,
                 };
 
                 var updatedLinkedEntity = CloneWithNewLink(link.RegisteredEntity, newLink, updatedEntity.ValidFrom);
