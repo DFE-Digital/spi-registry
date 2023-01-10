@@ -390,7 +390,7 @@ namespace Dfe.Spi.Registry.Application.Sync
 
             foreach (var entity1 in registeredEntity1.Entities)
             {
-                var entity2 = registeredEntity2.Entities.SingleOrDefault(e2 =>
+                var entity2 = registeredEntity2.Entities.FirstOrDefault(e2 =>
                     string.Equals(e2.SourceSystemName,entity1.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
                     string.Equals(e2.SourceSystemId,entity1.SourceSystemId, StringComparison.InvariantCultureIgnoreCase));
 
@@ -416,7 +416,7 @@ namespace Dfe.Spi.Registry.Application.Sync
 
             foreach (var link1 in registeredEntity1.Links ?? new Link[] { })
             {
-                var link2 = registeredEntity2.Links.SingleOrDefault(l2 =>
+                var link2 = registeredEntity2.Links.FirstOrDefault(l2 =>
                     string.Equals(l2.EntityType,link1.EntityType, StringComparison.InvariantCultureIgnoreCase) &&
                                   string.Equals(l2.SourceSystemName,link1.SourceSystemName, StringComparison.InvariantCultureIgnoreCase) &&
                                                 string.Equals(l2.SourceSystemId,link1.SourceSystemId, StringComparison.InvariantCultureIgnoreCase) &&
