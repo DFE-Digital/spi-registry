@@ -57,7 +57,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
             foreach (var partition in partitionedEntities)
             {
                 var toUpsert = partition.Where(u => !u.ToDelete).Select(u => u.Entity).ToArray();
-                var toDelete = partition.Where(u => u.ToDelete).Select(u => u.Entity.Id).ToArray();
+                var toDelete = partition.Where(u => u.ToDelete).Select(u => u.Entity.Id).Distinct().ToArray();
 
                 await _connection.MakeTransactionalUpdateAsync(
                     partition[0].Entity.PartitionableId,
