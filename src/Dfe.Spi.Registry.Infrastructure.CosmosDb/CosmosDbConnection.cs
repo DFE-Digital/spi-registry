@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Logging;
 
 namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 {
@@ -74,9 +76,11 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                     batch.UpsertItem(entity, options);
                 }
 
+
                 foreach (var id in idsToDelete)
                 {
-                    batch.DeleteItem(id);
+                   if (await ItemExists(id, new PartitionKey(partitionKey), logger, cancellationToken))
+                        batch.DeleteItem(id);
                 }
 
                 using (var batchResponse = await batch.ExecuteAsync(cancellationToken))
@@ -148,9 +152,31 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                         logger.Debug($"Received 429 on attempt {attempt}. Will retry after {_retryAfter}");
                     }
                 }
-
                 attempt++;
             }
         }
+
+        private async Task<bool> ItemExists(string id, PartitionKey partitionKey, ILoggerWrapper logger, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var result =
+                    await Container.ReadItemAsync<CosmosRegisteredEntity>(id, partitionKey,
+                        cancellationToken: cancellationToken);
+                logger.Debug($"ItemExists() > result status code: {result.StatusCode}");
+                return result.StatusCode == HttpStatusCode.OK;
+            }
+            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                logger.Debug($"Item {id} not found!, exception: {ex}");
+            }
+            catch (CosmosException ex)
+            {
+                logger.Debug($"Filed to check if item {id} exists, exception: {ex}");
+            }
+            return false;
+        }
+
     }
+
 }
