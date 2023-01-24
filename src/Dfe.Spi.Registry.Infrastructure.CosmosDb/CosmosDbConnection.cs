@@ -1,13 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Dfe.Spi.Common.Logging.Definitions;
 using Dfe.Spi.Registry.Domain.Configuration;
 using Microsoft.Azure.Cosmos;
-using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
 {
@@ -60,6 +59,8 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
         {
             await ExecuteContainerActionAsync(async () =>
             {
+                logger.Debug($"Running batch update operation...");
+
                 var batch = Container.CreateTransactionalBatch(new PartitionKey(partitionKey));
                 foreach (var entity in entitiesToUpsert)
                 {
@@ -76,27 +77,64 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                     batch.UpsertItem(entity, options);
                 }
 
-
-                foreach (var id in idsToDelete)
+                using var batchResponse = await batch.ExecuteAsync(cancellationToken);
+                if (!batchResponse.IsSuccessStatusCode)
                 {
-                   if (await ItemExists(id, new PartitionKey(partitionKey), logger, cancellationToken))
-                        batch.DeleteItem(id);
+
+                    if (batchResponse.TryGetNonEnumeratedCount(out var count))
+                    {
+                        for (var i = 0; i < count; i++)
+                        {
+                            var itemResponse = batchResponse.GetOperationResultAtIndex<CosmosRegisteredEntity>(i);
+                            logger.Debug($"Batch operation result #{i} | StatusCode: {itemResponse.StatusCode}, Resource Id: {itemResponse.Resource?.Id}");
+                        }
+                    }
+
+                    if (batchResponse.StatusCode == HttpStatusCode.PreconditionFailed)
+                    {
+                        throw new Exception($"Failed to store batch of entities in {partitionKey} as one or more of the updated entities has been " +
+                                            $"modified since the last time it was read. This is likely due to a duplicate sync event being received.");
+                    }
+
+                    throw new Exception($"Failed to store batch of entities in {partitionKey} " +
+                                        $"(Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
                 }
 
-                using (var batchResponse = await batch.ExecuteAsync(cancellationToken))
+                // separated update and delete operation to make sure updated entities are reflected in the to be deleted items! Run only if the Update operation is successful!
+                if (batchResponse.IsSuccessStatusCode)
                 {
-                    if (!batchResponse.IsSuccessStatusCode)
+
+                    logger.Debug($"Running batch delete operation...");
+
+                    var deleteBatch = Container.CreateTransactionalBatch(new PartitionKey(partitionKey));
+
+                    foreach (var id in idsToDelete)
                     {
-                        if (batchResponse.StatusCode == HttpStatusCode.PreconditionFailed)
+                        if (await ItemExists(id, new PartitionKey(partitionKey), logger, cancellationToken))
+                            deleteBatch.DeleteItem(id);
+                    }
+
+                    using var deleteBatchResponse = await deleteBatch.ExecuteAsync(cancellationToken);
+                    if (!deleteBatchResponse.IsSuccessStatusCode)
+                    {
+
+                        if (deleteBatchResponse.TryGetNonEnumeratedCount(out var count))
                         {
-                            throw new Exception($"Failed to store batch of entities in {partitionKey} as one or more of the updated entities has been " +
-                                                $"modified since the last time it was read. This is likely due to a duplicate sync event being received.");
+                            for (var i = 0; i < count; i++)
+                            {
+                                var itemResponse =
+                                    deleteBatchResponse.GetOperationResultAtIndex<CosmosRegisteredEntity>(i);
+                                logger.Debug(
+                                    $"Delete Batch operation result #{i} | StatusCode: {itemResponse.StatusCode}, Resource Id: {itemResponse.Resource?.Id}");
+                            }
                         }
-                        
-                        throw new Exception($"Failed to store batch of entities in {partitionKey} " +
-                                            $"(Response code: {batchResponse.StatusCode}): {batchResponse.ErrorMessage}");
+
+                        throw new Exception($"Failed to delete batch of entities in {partitionKey} " +
+                                            $"(Response code: {deleteBatchResponse.StatusCode}): {deleteBatchResponse.ErrorMessage}");
                     }
                 }
+
+
             }, logger, cancellationToken);
         }
 
@@ -141,7 +179,7 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 }
                 catch (CosmosException ex)
                 {
-                    if (attempt >= MaxActionAttempts - 1 || (int) ex.StatusCode != 429)
+                    if (attempt >= MaxActionAttempts - 1 || (int)ex.StatusCode != 429)
                     {
                         throw;
                     }
@@ -160,6 +198,8 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
         {
             try
             {
+                logger.Debug($"ItemExists() > checking if item {id} exists...");
+
                 var result =
                     await Container.ReadItemAsync<CosmosRegisteredEntity>(id, partitionKey,
                         cancellationToken: cancellationToken);
