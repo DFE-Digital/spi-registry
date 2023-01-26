@@ -103,34 +103,38 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                 // separated update and delete operation to make sure updated entities are reflected in the to be deleted items! Run only if the Update operation is successful!
                 if (batchResponse.IsSuccessStatusCode)
                 {
-
+                    var itemsToDelete = false;
                     logger.Debug($"Running batch delete operation...");
 
                     var deleteBatch = Container.CreateTransactionalBatch(new PartitionKey(partitionKey));
 
                     foreach (var id in idsToDelete)
                     {
-                        if (await ItemExists(id, new PartitionKey(partitionKey), logger, cancellationToken))
-                            deleteBatch.DeleteItem(id);
+                        if (!await ItemExists(id, new PartitionKey(partitionKey), logger, cancellationToken)) continue;
+                        deleteBatch.DeleteItem(id);
+                        itemsToDelete = true;
                     }
 
-                    using var deleteBatchResponse = await deleteBatch.ExecuteAsync(cancellationToken);
-                    if (!deleteBatchResponse.IsSuccessStatusCode)
+                    if (itemsToDelete)
                     {
-
-                        if (deleteBatchResponse.TryGetNonEnumeratedCount(out var count))
+                        using var deleteBatchResponse = await deleteBatch.ExecuteAsync(cancellationToken);
+                        if (!deleteBatchResponse.IsSuccessStatusCode)
                         {
-                            for (var i = 0; i < count; i++)
-                            {
-                                var itemResponse =
-                                    deleteBatchResponse.GetOperationResultAtIndex<CosmosRegisteredEntity>(i);
-                                logger.Debug(
-                                    $"Delete Batch operation result #{i} | StatusCode: {itemResponse.StatusCode}, Resource Id: {itemResponse.Resource?.Id}");
-                            }
-                        }
 
-                        throw new Exception($"Failed to delete batch of entities in {partitionKey} " +
-                                            $"(Response code: {deleteBatchResponse.StatusCode}): {deleteBatchResponse.ErrorMessage}");
+                            if (deleteBatchResponse.TryGetNonEnumeratedCount(out var count))
+                            {
+                                for (var i = 0; i < count; i++)
+                                {
+                                    var itemResponse =
+                                        deleteBatchResponse.GetOperationResultAtIndex<CosmosRegisteredEntity>(i);
+                                    logger.Debug(
+                                        $"Delete Batch operation result #{i} | StatusCode: {itemResponse.StatusCode}, Resource Id: {itemResponse.Resource?.Id}");
+                                }
+                            }
+
+                            throw new Exception($"Failed to delete batch of entities in {partitionKey} " +
+                                                $"(Response code: {deleteBatchResponse.StatusCode}): {deleteBatchResponse.ErrorMessage}");
+                        }
                     }
                 }
 
