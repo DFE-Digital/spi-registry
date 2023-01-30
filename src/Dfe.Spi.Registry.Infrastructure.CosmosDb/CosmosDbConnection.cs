@@ -131,8 +131,8 @@ namespace Dfe.Spi.Registry.Infrastructure.CosmosDb
                                         $"Delete Batch operation result #{i} | StatusCode: {itemResponse.StatusCode}, Resource Id: {itemResponse.Resource?.Id}");
                                 }
                             }
-
-                            throw new Exception($"Failed to delete batch of entities in {partitionKey} " +
+                            if (deleteBatchResponse.StatusCode != HttpStatusCode.NotFound)
+                                throw new Exception($"Failed to delete batch of entities in {partitionKey} " +
                                                 $"(Response code: {deleteBatchResponse.StatusCode}): {deleteBatchResponse.ErrorMessage}");
                         }
                     }
